@@ -225,22 +225,22 @@ public class WalletService extends AbstractService {
 
     public Mono<Wallet> getWallet(String owner, Currency currency) {
         return Mono.fromCallable(() -> {
-                    var locatedWallets = wallets.values().stream()
-                            .filter(wallet -> wallet.currency().equals(currency))
-                            .filter(wallet -> wallet.owner().equals(owner))
-                            .collect(Collectors.toSet());
-                    if (locatedWallets.isEmpty()) {
-                        return NULL;
-                    }
-                    if (locatedWallets.size() > 1) {
-                        throw new IllegalArgumentException(
-                                "Cannot return a single %s wallet when multiple wallets have the same %s currency."
-                                .formatted(currency, currency));
-                    }
-                    return locatedWallets.iterator().next();
-                })
-                .doOnError(error -> log.error(error.getMessage(), error))
-                .filter(wallet -> !wallet.equals(NULL));
+                var locatedWallets = wallets.values().stream()
+                        .filter(wallet -> wallet.currency().equals(currency))
+                        .filter(wallet -> wallet.owner().equals(owner))
+                        .collect(Collectors.toSet());
+                if (locatedWallets.isEmpty()) {
+                    return NULL;
+                }
+                if (locatedWallets.size() > 1) {
+                    throw new IllegalArgumentException(
+                            "Cannot return a single %s wallet when multiple wallets have the same %s currency."
+                            .formatted(currency, currency));
+                }
+                return locatedWallets.iterator().next();
+            })
+            .doOnError(error -> log.error(error.getMessage(), error))
+            .filter(wallet -> !wallet.equals(NULL));
     }
 
     public Mono<Wallet> getWallet(String owner, String walletAddress) {
@@ -267,18 +267,18 @@ public class WalletService extends AbstractService {
         final String traceid = UUID.randomUUID().toString();
         var monoWallet = getWallet(owner, walletId, traceid);
         return monoWallet.flatMap(wallet -> {
-                    try {
-                        wallet.transaction(params);
-                        log.info("{}: Transaction successful: wallet ({}) owned by {}", traceid, wallet.address(), owner);
-                        send(new Event(INFO, wallet.toString()), traceid, null);
-                        return Mono.just(wallet);
-                    } catch (Throwable e) {
-                        String errorMessage = "%s: Transaction error: wallet (%s) owned by %s".formatted(traceid, wallet.address(), owner);
-                        log.error(errorMessage, e);
-                        send(new Event(ERROR, wallet.toString()), traceid, e);
-                        return Mono.error(e);
-                    }
-                });
+            try {
+                wallet.transaction(params);
+                log.info("{}: Transaction successful: wallet ({}) owned by {}", traceid, wallet.address(), owner);
+                send(new Event(INFO, wallet.toString()), traceid, null);
+                return Mono.just(wallet);
+            } catch (Throwable e) {
+                String errorMessage = "%s: Transaction error: wallet (%s) owned by %s".formatted(traceid, wallet.address(), owner);
+                log.error(errorMessage, e);
+                send(new Event(ERROR, wallet.toString()), traceid, e);
+                return Mono.error(e);
+            }
+        });
      }
 
 }
