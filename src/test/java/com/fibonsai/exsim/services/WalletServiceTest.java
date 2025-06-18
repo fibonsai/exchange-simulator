@@ -25,7 +25,7 @@ import javax.naming.InsufficientResourcesException;
 import java.math.BigDecimal;
 import java.util.*;
 
-import static com.fibonsai.exsim.Event.EventType.ERROR;
+import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.services.WalletService.State.*;
 import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
 import static org.junit.jupiter.api.Assertions.*;

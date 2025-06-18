@@ -14,7 +14,7 @@
 
 package com.fibonsai.exsim.services;
 
-import com.fibonsai.exsim.Event;
+import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
@@ -33,8 +33,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static com.fibonsai.exsim.Event.EventType.ERROR;
-import static com.fibonsai.exsim.Event.EventType.INFO;
+import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
+import static com.fibonsai.exsim.dto.Event.EventType.INFO;
 import static com.fibonsai.exsim.services.WalletService.State.*;
 import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
 import static com.fibonsai.exsim.services.WalletService.Wallet.NULL;

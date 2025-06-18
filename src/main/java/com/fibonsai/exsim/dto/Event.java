@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.fibonsai.exsim;
+package com.fibonsai.exsim.dto;
 
 import org.springframework.lang.Nullable;
 
