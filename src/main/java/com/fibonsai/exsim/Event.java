@@ -14,11 +14,15 @@
 
 package com.fibonsai.exsim;
 
-import java.util.Objects;
+import org.springframework.lang.Nullable;
 
-public record Event(EventType type, Object event) {
+import java.util.Objects;
+import java.util.UUID;
+
+public record Event(EventType type, Object event, String traceId, Throwable error) {
     public enum EventType {
         ERROR,
+        INFO,
         UNDEF
     }
 
@@ -27,26 +31,47 @@ public record Event(EventType type, Object event) {
     }
 
     public Event(EventType type, Object event) {
+        this(type, event, UUID.randomUUID().toString());
+    }
+
+    public Event(EventType type, Object event, @Nullable String traceId) {
+        this(type, event, traceId, null);
+    }
+
+    public Event(EventType type, Object event, @Nullable String traceId, @Nullable Throwable error) {
         this.type = Objects.requireNonNullElse(type, EventType.UNDEF);
         this.event = Objects.requireNonNull(event);
+        this.traceId = Objects.requireNonNullElse(traceId, UUID.randomUUID().toString());
+        this.error = error;
+    }
+
+    public String errorMessage() {
+        return error != null ? error.getMessage() : "";
     }
 
     @Override
     public String toString() {
         return """
-                { "event": "%s", "type": "%s" }
-                """.formatted(event, type);
+                { "event": "%s", "type": "%s", "trace_id": "%s", "error": %s }
+                """.formatted(event, type, traceId, error);
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof Event(EventType type1, Object event1) && event1.equals(event()) && type1.equals(type());
+        return o instanceof Event(EventType oType, Object oEvent, String oTraceId, Throwable oError)
+                && oEvent.equals(event())
+                && oType.equals(type())
+                && oTraceId.equals(traceId())
+                && oError != null ? oError.equals(error()) : error() == null;
     }
 
     @Override
     public int hashCode() {
         int result = type.hashCode();
         result = 31 * result + event.hashCode();
+        result = 31 * result + traceId.hashCode();
+        result = 31 * result + (error != null ? error.getClass().hashCode() : 0);
+        result = 31 * result + errorMessage().hashCode();
         return result;
     }
 }

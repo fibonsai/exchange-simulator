@@ -14,7 +14,6 @@
 
 package com.fibonsai.exsim.services;
 
-import com.fibonsai.exsim.Event;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +25,7 @@ import javax.naming.InsufficientResourcesException;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.fibonsai.exsim.Event.EventType.ERROR;
 import static com.fibonsai.exsim.services.WalletService.State.*;
 import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -179,7 +179,7 @@ public class WalletServiceTest {
                 .consumeNextWith(wallet -> assertEquals(owner, wallet.owner()))
                 .verifyComplete();
 
-        for (var state: List.of(OFFLINE, ERROR, AUDIT_BLOCK, READ_ONLY)) {
+        for (var state: List.of(OFFLINE, SYNC_ERROR, AUDIT_BLOCK, READ_ONLY)) {
             walletService.getWallet(owner, USD).subscribe(wallet -> wallet.setState(state));
 
             StepVerifier.create(walletService.transaction(owner, USD, depositTenUsd))
@@ -195,25 +195,25 @@ public class WalletServiceTest {
                 .consumeNextWith(event ->
                         StepVerifier.create(walletService.getWallet(owner, USD)).consumeNextWith(wallet -> {
                                     assertTrue(event.event().toString().contains(wallet.owner()));
-                                    assertNotEquals(Event.EventType.ERROR, event.type());
+                                    assertNotEquals(ERROR, event.type());
                                 })
                                 .verifyComplete()
                 )
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(OFFLINE.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertEquals(ERROR, event.type());
                 })
                 .consumeNextWith(event -> {
-                    assertTrue(event.toString().contains(ERROR.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertTrue(event.toString().contains(SYNC_ERROR.toString()));
+                    assertEquals(ERROR, event.type());
                 })
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(AUDIT_BLOCK.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertEquals(ERROR, event.type());
                 })
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(READ_ONLY.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertEquals(ERROR, event.type());
                 })
                 .thenCancel()
                 .verify();
@@ -243,17 +243,17 @@ public class WalletServiceTest {
                 .consumeNextWith(event ->
                     StepVerifier.create(walletService.getWallet(owner, USD)).consumeNextWith(wallet -> {
                                 assertTrue(event.event().toString().contains(wallet.owner()));
-                                assertNotEquals(Event.EventType.ERROR, event.type());
+                                assertNotEquals(ERROR, event.type());
                             })
                             .verifyComplete()
                 )
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(ONLINE.toString()));
-                    assertNotEquals(Event.EventType.ERROR, event.type());
+                    assertNotEquals(ERROR, event.type());
                 })
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(WITHDRAW_ONLY.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertEquals(ERROR, event.type());
                     StepVerifier.create(walletService.getWallet(owner, USD)).consumeNextWith(wallet ->
                             assertEquals(initialAmount, wallet.amount()))
                             .verifyComplete();
@@ -284,17 +284,17 @@ public class WalletServiceTest {
                 .consumeNextWith(event ->
                     StepVerifier.create(walletService.getWallet(owner, USD)).consumeNextWith(wallet -> {
                                 assertTrue(event.event().toString().contains(wallet.owner()));
-                                assertNotEquals(Event.EventType.ERROR, event.type());
+                                assertNotEquals(ERROR, event.type());
                             })
                             .verifyComplete()
                 )
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(ONLINE.toString()));
-                    assertNotEquals(Event.EventType.ERROR, event.type());
+                    assertNotEquals(ERROR, event.type());
                 })
                 .consumeNextWith(event -> {
                     assertTrue(event.toString().contains(ONLINE.toString()));
-                    assertEquals(Event.EventType.ERROR, event.type());
+                    assertEquals(ERROR, event.type());
                     StepVerifier.create(walletService.getWallet(owner, USD)).consumeNextWith(wallet ->
                                 assertEquals(initialAmount, wallet.amount())
                             )

@@ -33,6 +33,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.fibonsai.exsim.Event.EventType.ERROR;
+import static com.fibonsai.exsim.Event.EventType.INFO;
 import static com.fibonsai.exsim.services.WalletService.State.*;
 import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
 import static com.fibonsai.exsim.services.WalletService.Wallet.NULL;
@@ -52,7 +54,7 @@ public class WalletService extends AbstractService {
     public enum State {
         ONLINE,
         OFFLINE,
-        ERROR,
+        SYNC_ERROR,
         AUDIT_BLOCK,
         READ_ONLY,
         WITHDRAW_ONLY;
@@ -117,7 +119,7 @@ public class WalletService extends AbstractService {
         }
 
         public Wallet transaction(FundsParams params) throws Exception {
-            if (state().is(OFFLINE, ERROR, AUDIT_BLOCK, READ_ONLY)) {
+            if (state().is(OFFLINE, SYNC_ERROR, AUDIT_BLOCK, READ_ONLY)) {
                 throw new IllegalStateException("Transaction is not possible. Wallet state is " + state());
             }
             if (!currency().equals(params.getCurrency())) {
@@ -187,7 +189,7 @@ public class WalletService extends AbstractService {
 
     public Mono<Wallet> setState(Wallet wallet, State state) {
         wallet.setState(state);
-        send(new Event(wallet.toString()), null, null);
+        send(new Event(INFO, wallet.toString()), null, null);
         return Mono.just(wallet);
     }
 
@@ -213,7 +215,7 @@ public class WalletService extends AbstractService {
         Wallet wallet = new Wallet(owner, currency, walletAddress);
         wallets.putIfAbsent(key, wallet);
         log.info("Created {} wallet to account {} with id {}", currency, owner, walletAddress);
-        send(new Event(wallet.toString()), null, null);
+        send(new Event(INFO, wallet.toString()), null, null);
         return Mono.just(wallet);
     }
 
@@ -268,12 +270,12 @@ public class WalletService extends AbstractService {
                     try {
                         wallet.transaction(params);
                         log.info("{}: Transaction successful: wallet ({}) owned by {}", traceid, wallet.address(), owner);
-                        send(new Event(wallet.toString()), traceid, null);
+                        send(new Event(INFO, wallet.toString()), traceid, null);
                         return Mono.just(wallet);
                     } catch (Throwable e) {
                         String errorMessage = "%s: Transaction error: wallet (%s) owned by %s".formatted(traceid, wallet.address(), owner);
                         log.error(errorMessage, e);
-                        send(new Event(Event.EventType.ERROR, wallet.toString()), traceid, e);
+                        send(new Event(ERROR, wallet.toString()), traceid, e);
                         return Mono.error(e);
                     }
                 });
