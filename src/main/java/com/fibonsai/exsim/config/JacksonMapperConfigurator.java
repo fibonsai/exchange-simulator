@@ -21,7 +21,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fibonsai.exsim.dto.asset.AssetCustodian;
 import com.fibonsai.exsim.dto.asset.Protocol;
 import com.fibonsai.exsim.dto.deser.AssetCustodianDeserializer;
+import com.fibonsai.exsim.dto.deser.CentralizationTypeDeserializer;
+import com.fibonsai.exsim.dto.deser.ItemTypeDeserializer;
 import com.fibonsai.exsim.dto.deser.ProtocolDeserializer;
+import com.fibonsai.exsim.dto.exchange.CentralizationType;
+import com.fibonsai.exsim.dto.exchange.ItemType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,11 +37,17 @@ public class JacksonMapperConfigurator {
         Version version = new Version(1, 0 , 0, null, null, null);
         SimpleModule assetProtocolModule = new SimpleModule("ProtocolDeserializer", version);
         SimpleModule assetCustodianModule = new SimpleModule("AssetCustodianDeserializer", version);
+        SimpleModule itemTypeModule = new SimpleModule("ItemTypeDeserializer", version);
+        SimpleModule centralizationTypeModule = new SimpleModule("CentralizationTypeDeserializer", version);
         assetProtocolModule.addDeserializer(Protocol.class, new ProtocolDeserializer());
         assetCustodianModule.addDeserializer(AssetCustodian.class, new AssetCustodianDeserializer());
+        assetCustodianModule.addDeserializer(ItemType.class, new ItemTypeDeserializer());
+        assetCustodianModule.addDeserializer(CentralizationType.class, new CentralizationTypeDeserializer());
         return new ObjectMapper()
                 .registerModule(assetProtocolModule)
                 .registerModule(assetCustodianModule)
+                .registerModule(itemTypeModule)
+                .registerModule(centralizationTypeModule)
                 .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
