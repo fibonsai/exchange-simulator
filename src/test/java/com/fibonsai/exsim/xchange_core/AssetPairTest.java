@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CurrencyPairTest {
+public class AssetPairTest {
 
   @Test
   public void testMajors() {
