@@ -14,8 +14,9 @@
 
 package com.fibonsai.exsim.util;
 
+import com.fibonsai.exsim.dto.WalletState;
 import com.fibonsai.exsim.services.AccountService;
-import com.fibonsai.exsim.services.ExchangeService;
+import com.fibonsai.exsim.services.ExchangeHubService;
 import com.fibonsai.exsim.services.WalletService;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +30,13 @@ import java.math.BigDecimal;
 @Component
 public class SimulatedSetup implements ApplicationListener<ApplicationReadyEvent> {
 
-    private final ExchangeService exchangeService;
+    private final ExchangeHubService exchangeHubService;
     private final AccountService accountService;
     private final WalletService walletService;
 
-    public SimulatedSetup(ExchangeService exchangeService, AccountService accountService, WalletService walletService) {
+    public SimulatedSetup(ExchangeHubService exchangeHubService, AccountService accountService, WalletService walletService) {
         log.info("Loading {}", this.getClass().getSimpleName());
-        this.exchangeService = exchangeService;
+        this.exchangeHubService = exchangeHubService;
         this.accountService = accountService;
         this.walletService = walletService;
     }
@@ -45,13 +46,13 @@ public class SimulatedSetup implements ApplicationListener<ApplicationReadyEvent
         log.info("{}", e);
 
         walletService.events().subscribe(event -> log.info(event.toString()));
-        exchangeService.start().subscribe(instant -> {
+        exchangeHubService.start().subscribe(instant -> {
             log.info("setup executed {}", instant);
             for (int i = 0; i < 10; i++) {
                 var account = "account" + i;
                 accountService.addAccount(account).subscribe(acc -> {
                     walletService.getDefaultWallet(acc).flatMap(wallet ->
-                        walletService.setState(wallet, WalletService.State.ONLINE)
+                        walletService.setState(wallet, WalletState.ONLINE)
                     ).subscribe(wallet -> {
                         walletService.transaction(acc, wallet.address(), new DepositFundsParams() {
                             public BigDecimal getAmount() { return BigDecimal.TEN; }
