@@ -116,7 +116,7 @@ public class Wallet {
     @Override
     public String toString() {
         return """
-                { "timestamp": %s, "iso4217": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
+                { "timestamp": %s, "asset": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
                 """.formatted(timestamp(), asset(), state(), address(), owner(), amount());
     }
 }
