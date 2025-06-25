@@ -37,6 +37,8 @@ public class ExchangeService extends AbstractService {
 
     public Mono<Instant> start() {
         return Mono.fromCallable(() -> {
+            marketDataService.prepareAssets();
+
             log.info("exchange started");
             return Instant.now();
         });

@@ -74,7 +74,7 @@ public class WalletService extends AbstractService {
             public State state() { return READ_ONLY; }
         };
 
-        private final Currency currency;
+        private final Currency iso4217;
         private final String walletAddress;
         private final String owner;
 
@@ -82,9 +82,9 @@ public class WalletService extends AbstractService {
         private State state = OFFLINE;
         private Instant timestamp = Instant.now();
 
-        public Wallet(String owner, Currency currency, String walletAddress) {
+        public Wallet(String owner, Currency iso4217, String walletAddress) {
             this.owner = owner;
-            this.currency = currency;
+            this.iso4217 = iso4217;
             this.walletAddress = walletAddress;
         }
 
@@ -96,8 +96,8 @@ public class WalletService extends AbstractService {
             return walletAddress;
         }
 
-        public Currency currency() {
-            return currency;
+        public Currency iso4217() {
+            return iso4217;
         }
 
         public BigDecimal amount() {
@@ -122,8 +122,8 @@ public class WalletService extends AbstractService {
             if (state().is(OFFLINE, SYNC_ERROR, AUDIT_BLOCK, READ_ONLY)) {
                 throw new IllegalStateException("Transaction is not possible. Wallet state is " + state());
             }
-            if (!currency().equals(params.getCurrency())) {
-                throw new IllegalArgumentException("Transaction not possible using different currency: %s != %s".formatted(currency(), params.getCurrency()));
+            if (!iso4217().equals(params.getCurrency())) {
+                throw new IllegalArgumentException("Transaction not possible using different iso4217: %s != %s".formatted(iso4217(), params.getCurrency()));
             }
             switch (params) {
                 case DepositFundsParams dfParams -> {
@@ -162,8 +162,8 @@ public class WalletService extends AbstractService {
         @Override
         public String toString() {
             return """
-                    { "timestamp": %s, "currency": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
-                    """.formatted(timestamp(), currency(), state(), address(), owner(), amount());
+                    { "timestamp": %s, "iso4217": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
+                    """.formatted(timestamp(), iso4217(), state(), address(), owner(), amount());
         }
     }
 
@@ -197,24 +197,24 @@ public class WalletService extends AbstractService {
         return createWallet(owner, DEFAULT_CURRENCY);
     }
 
-    public Mono<Wallet> createWallet(String owner, Currency currency) throws IllegalArgumentException {
-        return createWallet(owner, currency, UUID.randomUUID().toString());
+    public Mono<Wallet> createWallet(String owner, Currency iso4217) throws IllegalArgumentException {
+        return createWallet(owner, iso4217, UUID.randomUUID().toString());
     }
 
-    public Mono<Wallet> createWallet(String owner, Currency currency, String walletAddress) throws IllegalArgumentException {
+    public Mono<Wallet> createWallet(String owner, Currency iso4217, String walletAddress) throws IllegalArgumentException {
         WalletKey key = new WalletKey(owner, walletAddress);
         if (wallets.containsKey(key)) {
             return Mono.error(new IllegalArgumentException("Wallet %s already exists".formatted(key)));
         }
-        Optional<Wallet> walletFromRepository = getWallet(owner, currency).blockOptional();
+        Optional<Wallet> walletFromRepository = getWallet(owner, iso4217).blockOptional();
         if (walletFromRepository.isPresent() &&
-                currenciesWithOnlyOneAddress.contains(walletFromRepository.get().currency.getCurrencyCode())) {
+                currenciesWithOnlyOneAddress.contains(walletFromRepository.get().iso4217.getCurrencyCode())) {
             return Mono.error(new IllegalArgumentException(
-                    "Multiple wallets addresses not allowed using %s currency".formatted(currency)));
+                    "Multiple wallets addresses not allowed using %s iso4217".formatted(iso4217)));
         }
-        Wallet wallet = new Wallet(owner, currency, walletAddress);
+        Wallet wallet = new Wallet(owner, iso4217, walletAddress);
         wallets.putIfAbsent(key, wallet);
-        log.info("Created {} wallet to account {} with id {}", currency, owner, walletAddress);
+        log.info("Created {} wallet to account {} with id {}", iso4217, owner, walletAddress);
         send(new Event(INFO, wallet.toString()), null, null);
         return Mono.just(wallet);
     }
@@ -223,10 +223,10 @@ public class WalletService extends AbstractService {
         return getWallet(owner, DEFAULT_CURRENCY);
     }
 
-    public Mono<Wallet> getWallet(String owner, Currency currency) {
+    public Mono<Wallet> getWallet(String owner, Currency iso4217) {
         return Mono.fromCallable(() -> {
                 var locatedWallets = wallets.values().stream()
-                        .filter(wallet -> wallet.currency().equals(currency))
+                        .filter(wallet -> wallet.iso4217().equals(iso4217))
                         .filter(wallet -> wallet.owner().equals(owner))
                         .collect(Collectors.toSet());
                 if (locatedWallets.isEmpty()) {
@@ -234,8 +234,8 @@ public class WalletService extends AbstractService {
                 }
                 if (locatedWallets.size() > 1) {
                     throw new IllegalArgumentException(
-                            "Cannot return a single %s wallet when multiple wallets have the same %s currency."
-                            .formatted(currency, currency));
+                            "Cannot return a single %s wallet when multiple wallets have the same %s iso4217."
+                            .formatted(iso4217, iso4217));
                 }
                 return locatedWallets.iterator().next();
             })
@@ -254,7 +254,7 @@ public class WalletService extends AbstractService {
     private Mono<Wallet> getWallet(String owner, Object walletId, String traceid) {
         return switch (walletId) {
             case String walletAddress -> getWallet(owner, walletAddress);
-            case Currency currency -> getWallet(owner, currency);
+            case Currency iso4217 -> getWallet(owner, iso4217);
             default -> {
                 log.error("{}: Unexpected value: {}", traceid, walletId);
                 yield Mono.just(NULL);

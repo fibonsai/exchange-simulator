@@ -19,7 +19,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class MarketDataService extends AbstractService {
 
-    public MarketDataService() {
+    private final AssetService assetService;
+
+    public MarketDataService(AssetService assetService) {
         super();
+        this.assetService = assetService;
+    }
+
+    public void prepareAssets() {
+        assetService.init();
     }
 }
