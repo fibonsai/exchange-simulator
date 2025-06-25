@@ -18,6 +18,7 @@ import com.fibonsai.exsim.dto.Asset;
 import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
+import com.fibonsai.exsim.types.WalletState;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.dto.Event.EventType.INFO;
-import static com.fibonsai.exsim.services.WalletService.WalletState.*;
+import static com.fibonsai.exsim.types.WalletState.*;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_CANCELLED;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
 
@@ -51,20 +52,6 @@ public class WalletService extends AbstractService {
     private final Set<String> assetWithOneAddress = Collections.synchronizedSet(new HashSet<>());
     private Sinks.Many<Event> events = Sinks.many().multicast().onBackpressureBuffer();
 
-
-    @SuppressWarnings("unused")
-    public enum WalletState {
-        ONLINE,
-        OFFLINE,
-        SYNC_ERROR,
-        AUDIT_BLOCK,
-        READ_ONLY,
-        WITHDRAW_ONLY;
-
-        public boolean is(WalletState... states) {
-            return List.of(states).contains(this);
-        }
-    }
 
     public WalletService(AssetService assetService) {
         super();

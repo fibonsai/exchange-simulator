@@ -30,7 +30,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
-import static com.fibonsai.exsim.services.WalletService.WalletState.*;
+import static com.fibonsai.exsim.types.WalletState.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
