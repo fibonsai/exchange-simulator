@@ -24,7 +24,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @JsonDeserialize(builder = Asset.Builder.class)
@@ -71,7 +70,7 @@ public record Asset(
         String websiteUrl,
         String blogUrl,
         String whitePaperUrl,
-        List<Map<String,String>> otherDocumentUrls,
+        List<OtherDocumentsUrl> otherDocumentUrls,
         List<Map<String, String>> explorerAddresses,
         List<Map<String, String>> rpcOperators,
         String assetSymbolGlyph,
@@ -93,42 +92,6 @@ public record Asset(
 
     @Serial
     private static final long serialVersionUID = -7340731832345284129L;
-
-    private static final Map<String, Asset> assets = new ConcurrentHashMap<>();
-
-    public static final Asset NULL = Asset.builder().id(-1L).name("NULL").build();
-
-    public static Asset fromCurrency(Currency currency) {
-        return Asset.builder()
-                .id((long) currency.getNumericCode())
-                .name(currency.getCurrencyCode())
-                .assetDescription(currency.getDisplayName())
-                .assetSymbolGlyph(currency.getSymbol())
-                .assetDecimalPoints(BigDecimal.valueOf(currency.getDefaultFractionDigits()))
-                .symbol(currency.getSymbol())
-                .assetType(AssetType.FIAT)
-                .build();
-    }
-
-    public static void add(Currency currency) {
-        assets.computeIfAbsent(currency.getCurrencyCode(), name -> Asset.fromCurrency(currency));
-    }
-
-    public static void add(Asset asset) {
-        assets.computeIfAbsent(asset.name(), name -> asset);
-    }
-
-    public static void loadFiatAssets() {
-        Currency.getAvailableCurrencies().forEach(Asset::add);
-    }
-
-    public static void loadFromFile() {
-        throw new UnsupportedOperationException("WIP");
-    }
-
-    public static Map<String, Asset> assets() {
-        return Collections.unmodifiableMap(assets);
-    }
 
     public static Builder builder() {
         return new Builder();
@@ -216,11 +179,8 @@ public record Asset(
     @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
-        // Prevent Currency Numeric Code conflict. Assets not-currency start with ID * ID_SHIFT
-        private static final long ID_SHIFT = 1_000L;
-
         @JsonProperty("ID")
-        Long id = 1_000L;
+        Long id = 0L;
 
         @JsonProperty("SYMBOL")
         String symbol = "";
@@ -343,7 +303,7 @@ public record Asset(
         String whitePaperUrl = "";
 
         @JsonProperty("OTHER_DOCUMENT_URLS")
-        List<Map<String,String>> otherDocumentUrls = new ArrayList<>();
+        List<OtherDocumentsUrl> otherDocumentUrls = new ArrayList<>();
 
         @JsonProperty("EXPLORER_ADDRESSES")
         List<Map<String, String>> explorerAddresses = new ArrayList<>();
@@ -397,7 +357,7 @@ public record Asset(
         }
 
         public Builder id(Long id) {
-            this.id = id * ID_SHIFT;
+            this.id = id;
             return this;
         }
 
@@ -755,15 +715,15 @@ public record Asset(
             return this;
         }
 
-        public Builder otherDocumentUrls(Map<String, String> explorerAddress) {
-            if (this.otherDocumentUrls == null) this.otherDocumentUrls = new ArrayList<Map<String, String>>();
-            this.otherDocumentUrls.add(explorerAddress);
+        public Builder otherDocumentUrl(OtherDocumentsUrl otherDocumentUrl) {
+            if (this.otherDocumentUrls == null) this.otherDocumentUrls = new ArrayList<OtherDocumentsUrl>();
+            this.otherDocumentUrls.add(otherDocumentUrl);
             return this;
         }
 
-        public Builder otherDocumentUrlses(Collection<? extends Map<String, String>> otherDocumentUrls) {
+        public Builder otherDocumentUrls(Collection<? extends OtherDocumentsUrl> otherDocumentUrls) {
             if (otherDocumentUrls == null) return this;
-            if (this.otherDocumentUrls == null) this.otherDocumentUrls = new ArrayList<Map<String, String>>();
+            if (this.otherDocumentUrls == null) this.otherDocumentUrls = new ArrayList<OtherDocumentsUrl>();
             this.otherDocumentUrls.addAll(otherDocumentUrls);
             return this;
         }
@@ -1089,16 +1049,16 @@ public record Asset(
                 default:
                     otherSocialNetworks = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.otherSocialNetworks));
             }
-            List<Map<String, String>> otherDocumentUrls;
+            List<OtherDocumentsUrl> otherDocumentUrls;
             switch (this.otherDocumentUrls == null ? 0 : this.otherDocumentUrls.size()) {
                 case 0:
                     otherDocumentUrls = Collections.emptyList();
                     break;
                 case 1:
-                    otherDocumentUrls = Collections.singletonList(this.otherDocumentUrls.get(0));
+                    otherDocumentUrls = Collections.singletonList(this.otherDocumentUrls.getFirst());
                     break;
                 default:
-                    otherDocumentUrls = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.otherDocumentUrls));
+                    otherDocumentUrls = Collections.unmodifiableList(this.otherDocumentUrls);
             }
             List<Map<String, String>> explorerAddresses;
             switch (this.explorerAddresses == null ? 0 : this.explorerAddresses.size()) {
