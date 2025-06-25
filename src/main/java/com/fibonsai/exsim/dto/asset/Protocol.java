@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package com.fibonsai.exsim.dto;
+package com.fibonsai.exsim.dto.asset;
 
 @SuppressWarnings("SpellCheckingInspection")
 public enum Protocol {

@@ -14,9 +14,9 @@
 
 package com.fibonsai.exsim.services;
 
-import com.fibonsai.exsim.dto.Asset;
 import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.dto.Wallet;
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WalletState;
 import lombok.extern.slf4j.Slf4j;

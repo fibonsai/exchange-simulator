@@ -12,11 +12,12 @@
  *  limitations under the License.
  */
 
-package com.fibonsai.exsim.dto;
+package com.fibonsai.exsim.dto.asset;
 
-public enum SmartContractSupportType {
-    BASIC_LOGIC_AND_SCRIPTING,
-    ADVANCED_EXECUTION_RIGHTS,
-    THIRD_PARTY_ONLY,
+public enum AssetType {
+    FIAT,
+    BLOCKCHAIN,
+    TOKEN,
+    COMMODITY,
     UNDEF
 }

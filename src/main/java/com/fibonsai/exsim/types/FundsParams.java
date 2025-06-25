@@ -14,7 +14,7 @@
 
 package com.fibonsai.exsim.types;
 
-import com.fibonsai.exsim.dto.Asset;
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
 
 import java.math.BigDecimal;

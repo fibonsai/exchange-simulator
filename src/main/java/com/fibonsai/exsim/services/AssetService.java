@@ -16,7 +16,7 @@ package com.fibonsai.exsim.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fibonsai.exsim.dto.Asset;
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

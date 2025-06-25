@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package com.fibonsai.exsim.dto;
+package com.fibonsai.exsim.dto.asset;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

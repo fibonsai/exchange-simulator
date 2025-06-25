@@ -14,7 +14,7 @@
 
 package com.fibonsai.exsim.services;
 
-import com.fibonsai.exsim.dto.Asset;
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
 import com.fibonsai.exsim.util.AssetUtil;

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fibonsai.exsim.dto.AssetCustodian;
+import com.fibonsai.exsim.dto.asset.AssetCustodian;
 
 import java.io.IOException;
 

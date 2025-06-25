@@ -14,6 +14,7 @@
 
 package com.fibonsai.exsim.dto;
 
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WalletState;

@@ -14,6 +14,7 @@
 
 package com.fibonsai.exsim.dto;
 
+import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 
