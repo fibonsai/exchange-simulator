@@ -19,7 +19,6 @@ import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
-import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -37,9 +36,7 @@ import java.util.stream.Collectors;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.dto.Event.EventType.INFO;
-import static com.fibonsai.exsim.services.WalletService.State.*;
-import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_ASSET;
-import static com.fibonsai.exsim.services.WalletService.Wallet.NULL;
+import static com.fibonsai.exsim.services.WalletService.WalletState.*;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_CANCELLED;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
 
@@ -54,8 +51,9 @@ public class WalletService extends AbstractService {
     private final Set<String> assetWithOneAddress = Collections.synchronizedSet(new HashSet<>());
     private Sinks.Many<Event> events = Sinks.many().multicast().onBackpressureBuffer();
 
+
     @SuppressWarnings("unused")
-    public enum State {
+    public enum WalletState {
         ONLINE,
         OFFLINE,
         SYNC_ERROR,
@@ -63,28 +61,153 @@ public class WalletService extends AbstractService {
         READ_ONLY,
         WITHDRAW_ONLY;
 
-
-        public boolean is(State... states) {
+        public boolean is(WalletState... states) {
             return List.of(states).contains(this);
         }
     }
 
-    public static class Wallet {
+    public WalletService(AssetService assetService) {
+        super();
+        this.assetService = assetService;
+    }
 
-        private static final String NULL_OWNER = "NULL";
-
-        public static final Asset DEFAULT_ASSET = AssetUtil.fromCurrency(Currency.getInstance("USD"));
-        public static final Wallet NULL = new Wallet(NULL_OWNER, DEFAULT_ASSET, UUID.randomUUID().toString()) {
-            public Wallet transaction(FundsParams params) { return this; }
-            public State state() { return READ_ONLY; }
+    public Wallet nullWallet() {
+        return new Wallet("NULL_OWNER", assetService.defaultAsset(), UUID.randomUUID().toString()) {
+            public Wallet transaction(FundsParams params) {
+                return this;
+            }
+            public WalletState state() {
+                return READ_ONLY;
+            }
         };
+    }
+
+    public void reset() {
+        log.warn("<<< Resetting wallet service >>>");
+        wallets.clear();
+        assetWithOneAddress.clear();
+        events.tryEmitComplete();
+        events = Sinks.many().multicast().onBackpressureBuffer();
+    }
+
+    public void assetWithOneAddress(Set<String> assetWithOneAddress) {
+        this.assetWithOneAddress.clear();
+        this.assetWithOneAddress.addAll(Optional.ofNullable(assetWithOneAddress).orElse(Set.of()));
+    }
+
+    public Flux<Event> events() {
+        return events.asFlux();
+    }
+
+    private void send(Event event, @Nullable String traceId, @Nullable Throwable error) {
+        Sinks.EmitResult result = events.tryEmitNext(event);
+        if (result.equals(FAIL_NON_SERIALIZED) || result.equals(FAIL_CANCELLED)) {
+            log.error("Problem to send event: {}", result, error);
+        }
+    }
+
+    public Mono<Wallet> setState(Wallet wallet, WalletState state) {
+        wallet.setState(state);
+        send(new Event(INFO, wallet.toString()), null, null);
+        return Mono.just(wallet);
+    }
+
+    public Mono<Wallet> createDefaultWallet(String owner) throws IllegalArgumentException {
+        return createWallet(owner, assetService.defaultAsset());
+    }
+
+    public Mono<Wallet> createWallet(String owner, Asset asset) throws IllegalArgumentException {
+        return createWallet(owner, asset, UUID.randomUUID().toString());
+    }
+
+    public Mono<Wallet> createWallet(String owner, Asset asset, String walletAddress) throws IllegalArgumentException {
+        WalletKey key = new WalletKey(owner, walletAddress);
+        if (wallets.containsKey(key)) {
+            return Mono.error(new IllegalArgumentException("Wallet %s already exists".formatted(key)));
+        }
+        Optional<Wallet> walletFromRepository = getWallet(owner, asset).blockOptional();
+        if (walletFromRepository.isPresent() &&
+                assetWithOneAddress.contains(walletFromRepository.get().asset.name())) {
+            return Mono.error(new IllegalArgumentException(
+                    "Multiple wallets addresses not allowed using %s asset".formatted(asset)));
+        }
+        Wallet wallet = new Wallet(owner, asset, walletAddress);
+        wallets.putIfAbsent(key, wallet);
+        log.info("Created {} wallet to account {} with id {}", asset, owner, walletAddress);
+        send(new Event(INFO, wallet.toString()), null, null);
+        return Mono.just(wallet);
+    }
+
+    public Mono<Wallet> getDefaultWallet(String owner) {
+        return getWallet(owner, assetService.defaultAsset());
+    }
+
+    public Mono<Wallet> getWallet(String owner, Asset asset) {
+        return Mono.fromCallable(() -> {
+                var locatedWallets = wallets.values().stream()
+                        .filter(wallet -> wallet.asset().equals(asset))
+                        .filter(wallet -> wallet.owner().equals(owner))
+                        .collect(Collectors.toSet());
+                if (locatedWallets.isEmpty()) {
+                    return nullWallet();
+                }
+                if (locatedWallets.size() > 1) {
+                    throw new IllegalArgumentException(
+                            "Cannot return a single %s wallet when multiple wallets have the same %s asset."
+                            .formatted(asset, asset));
+                }
+                return locatedWallets.iterator().next();
+            })
+            .doOnError(error -> log.error(error.getMessage(), error))
+            .filter(wallet -> !wallet.equals(nullWallet()));
+    }
+
+    public Mono<Wallet> getWallet(String owner, String walletAddress) {
+        WalletKey key = new WalletKey(owner, walletAddress);
+        return Mono.just(Optional.ofNullable(wallets.get(key)).orElseGet(() -> {
+            log.error("Wallet {} NOT FOUND", walletAddress);
+            return nullWallet();
+        })).filter(wallet -> wallet.owner().equals(owner));
+    }
+
+    private Mono<Wallet> getWallet(String owner, Object walletId, String traceid) {
+        return switch (walletId) {
+            case String walletAddress -> getWallet(owner, walletAddress);
+            case Asset asset -> getWallet(owner, asset);
+            default -> {
+                log.error("{}: Unexpected value: {}", traceid, walletId);
+                yield Mono.just(nullWallet());
+            }
+        };
+    }
+
+    @SuppressWarnings("unused")
+    public Mono<Wallet> transaction(String owner, Object walletId, FundsParams params) {
+        final String traceId = UUID.randomUUID().toString();
+        var monoWallet = getWallet(owner, walletId, traceId);
+        return monoWallet.flatMap(wallet -> {
+            try {
+                wallet.transaction(params);
+                log.info("{}: Transaction successful: wallet ({}) owned by {}", traceId, wallet.address(), owner);
+                send(new Event(INFO, wallet.toString()), traceId, null);
+                return Mono.just(wallet);
+            } catch (Throwable e) {
+                String errorMessage = "%s: Transaction error: wallet (%s) owned by %s".formatted(traceId, wallet.address(), owner);
+                log.error(errorMessage, e);
+                send(new Event(ERROR, wallet.toString()), traceId, e);
+                return Mono.error(e);
+            }
+        });
+     }
+
+    public static class Wallet {
 
         private final Asset asset;
         private final String walletAddress;
         private final String owner;
 
         private BigDecimal amount = BigDecimal.ZERO;
-        private State state = OFFLINE;
+        private WalletState state = OFFLINE;
         private Instant timestamp = Instant.now();
 
         public Wallet(String owner, Asset asset, String walletAddress) {
@@ -113,11 +236,11 @@ public class WalletService extends AbstractService {
             return timestamp;
         }
 
-        public State state() {
+        public WalletState state() {
             return state;
         }
 
-        public Wallet setState(@NonNull State state) {
+        public Wallet setState(@NonNull WalletState state) {
             this.state = state;
             this.timestamp = Instant.now();
             return this;
@@ -171,128 +294,5 @@ public class WalletService extends AbstractService {
                     """.formatted(timestamp(), asset(), state(), address(), owner(), amount());
         }
     }
-
-    public WalletService(AssetService assetService) {
-        super();
-        this.assetService = assetService;
-    }
-
-    public void reset() {
-        log.warn("<<< Resetting wallet service >>>");
-        wallets.clear();
-        assetWithOneAddress.clear();
-        events.tryEmitComplete();
-        events = Sinks.many().multicast().onBackpressureBuffer();
-    }
-
-    public void currenciesWithOnlyOneAddress(Set<String> currenciesWithOnlyOneAddress) {
-        this.assetWithOneAddress.clear();
-        this.assetWithOneAddress.addAll(Optional.ofNullable(currenciesWithOnlyOneAddress).orElse(Set.of()));
-    }
-
-    public Flux<Event> events() {
-        return events.asFlux();
-    }
-
-    private void send(Event event, @Nullable String traceId, @Nullable Throwable error) {
-        Sinks.EmitResult result = events.tryEmitNext(event);
-        if (result.equals(FAIL_NON_SERIALIZED) || result.equals(FAIL_CANCELLED)) {
-            log.error("Problem to send event: {}", result, error);
-        }
-    }
-
-    public Mono<Wallet> setState(Wallet wallet, State state) {
-        wallet.setState(state);
-        send(new Event(INFO, wallet.toString()), null, null);
-        return Mono.just(wallet);
-    }
-
-    public Mono<Wallet> createDefaultWallet(String owner) throws IllegalArgumentException {
-        return createWallet(owner, DEFAULT_ASSET);
-    }
-
-    public Mono<Wallet> createWallet(String owner, Asset asset) throws IllegalArgumentException {
-        return createWallet(owner, asset, UUID.randomUUID().toString());
-    }
-
-    public Mono<Wallet> createWallet(String owner, Asset asset, String walletAddress) throws IllegalArgumentException {
-        WalletKey key = new WalletKey(owner, walletAddress);
-        if (wallets.containsKey(key)) {
-            return Mono.error(new IllegalArgumentException("Wallet %s already exists".formatted(key)));
-        }
-        Optional<Wallet> walletFromRepository = getWallet(owner, asset).blockOptional();
-        if (walletFromRepository.isPresent() &&
-                assetWithOneAddress.contains(walletFromRepository.get().asset.name())) {
-            return Mono.error(new IllegalArgumentException(
-                    "Multiple wallets addresses not allowed using %s asset".formatted(asset)));
-        }
-        Wallet wallet = new Wallet(owner, asset, walletAddress);
-        wallets.putIfAbsent(key, wallet);
-        log.info("Created {} wallet to account {} with id {}", asset, owner, walletAddress);
-        send(new Event(INFO, wallet.toString()), null, null);
-        return Mono.just(wallet);
-    }
-
-    public Mono<Wallet> getDefaultWallet(String owner) {
-        return getWallet(owner, DEFAULT_ASSET);
-    }
-
-    public Mono<Wallet> getWallet(String owner, Asset asset) {
-        return Mono.fromCallable(() -> {
-                var locatedWallets = wallets.values().stream()
-                        .filter(wallet -> wallet.asset().equals(asset))
-                        .filter(wallet -> wallet.owner().equals(owner))
-                        .collect(Collectors.toSet());
-                if (locatedWallets.isEmpty()) {
-                    return NULL;
-                }
-                if (locatedWallets.size() > 1) {
-                    throw new IllegalArgumentException(
-                            "Cannot return a single %s wallet when multiple wallets have the same %s asset."
-                            .formatted(asset, asset));
-                }
-                return locatedWallets.iterator().next();
-            })
-            .doOnError(error -> log.error(error.getMessage(), error))
-            .filter(wallet -> !wallet.equals(NULL));
-    }
-
-    public Mono<Wallet> getWallet(String owner, String walletAddress) {
-        WalletKey key = new WalletKey(owner, walletAddress);
-        return Mono.just(Optional.ofNullable(wallets.get(key)).orElseGet(() -> {
-            log.error("Wallet {} NOT FOUND", walletAddress);
-            return NULL;
-        })).filter(wallet -> wallet.owner().equals(owner));
-    }
-
-    private Mono<Wallet> getWallet(String owner, Object walletId, String traceid) {
-        return switch (walletId) {
-            case String walletAddress -> getWallet(owner, walletAddress);
-            case Asset asset -> getWallet(owner, asset);
-            default -> {
-                log.error("{}: Unexpected value: {}", traceid, walletId);
-                yield Mono.just(NULL);
-            }
-        };
-    }
-
-    @SuppressWarnings("unused")
-    public Mono<Wallet> transaction(String owner, Object walletId, FundsParams params) {
-        final String traceid = UUID.randomUUID().toString();
-        var monoWallet = getWallet(owner, walletId, traceid);
-        return monoWallet.flatMap(wallet -> {
-            try {
-                wallet.transaction(params);
-                log.info("{}: Transaction successful: wallet ({}) owned by {}", traceid, wallet.address(), owner);
-                send(new Event(INFO, wallet.toString()), traceid, null);
-                return Mono.just(wallet);
-            } catch (Throwable e) {
-                String errorMessage = "%s: Transaction error: wallet (%s) owned by %s".formatted(traceid, wallet.address(), owner);
-                log.error(errorMessage, e);
-                send(new Event(ERROR, wallet.toString()), traceid, e);
-                return Mono.error(e);
-            }
-        });
-     }
 
 }

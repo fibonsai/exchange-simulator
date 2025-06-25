@@ -60,7 +60,7 @@ public record Asset(
         SmartContractSupportType smartContractSupportType,
         BigDecimal lastBlockHashesPerSecond,
         BigDecimal lastBlockDifficulty,
-        List<ProtocolStandard> supportedStandards,
+        List<Protocol> supportedStandards,
         List<Map<String, Object>> layerTwoSolutions,
         List<Map<String, Object>> privacySolutions,
         List<Map<String, Object>> codeRepositories,
@@ -99,17 +99,17 @@ public record Asset(
 
     @Override
     public int compareTo(Asset asset) {
-        return name().compareTo(asset.name());
+        return symbol().compareTo(asset.symbol());
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof Asset asset && name().equals(asset.name());
+        return o instanceof Asset asset && symbol().equals(asset.symbol());
     }
 
     @Override
     public int hashCode() {
-        return name().hashCode();
+        return symbol().hashCode();
     }
 
     @Override
@@ -273,7 +273,7 @@ public record Asset(
         BigDecimal lastBlockDifficulty = BigDecimal.ZERO;
 
         @JsonProperty("SUPPORTED_STANDARDS")
-        List<ProtocolStandard> supportedStandards = new ArrayList<>();
+        List<Protocol> supportedStandards = new ArrayList<>();
 
         @JsonProperty("LAYER_TWO_SOLUTIONS")
         List<Map<String, Object>> layerTwoSolutions = new ArrayList<>();
@@ -412,14 +412,14 @@ public record Asset(
         }
 
         public Builder assetAlternativeId(Map<String, String> assetAlternativeId) {
-            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<Map<String, String>>();
+            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<>();
             this.assetAlternativeIds.add(assetAlternativeId);
             return this;
         }
 
-        public Builder assetAlternativeIds(Collection<? extends Map<String, String>> assetSecurityMetrics) {
+        public Builder assetAlternativeIds(Collection<? extends Map<String, String>> assetAlternativeIds) {
             if (assetAlternativeIds == null) return this;
-            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<Map<String, String>>();
+            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<>();
             this.assetAlternativeIds.addAll(assetAlternativeIds);
             return this;
         }
@@ -441,14 +441,14 @@ public record Asset(
         }
 
         public Builder supportedPlatform(AssetPlatform supportedPlatform) {
-            if (this.supportedPlatforms == null) this.supportedPlatforms = new ArrayList<AssetPlatform>();
+            if (this.supportedPlatforms == null) this.supportedPlatforms = new ArrayList<>();
             this.supportedPlatforms.add(supportedPlatform);
             return this;
         }
 
         public Builder supportedPlatforms(Collection<? extends AssetPlatform> supportedPlatforms) {
             if (supportedPlatforms == null) return this;
-            if (this.supportedPlatforms == null) this.supportedPlatforms = new ArrayList<AssetPlatform>();
+            if (this.supportedPlatforms == null) this.supportedPlatforms = new ArrayList<>();
             this.supportedPlatforms.addAll(supportedPlatforms);
             return this;
         }
@@ -595,15 +595,15 @@ public record Asset(
             return this;
         }
 
-        public Builder supportedStandard(ProtocolStandard supportedStandard) {
-            if (this.supportedStandards == null) this.supportedStandards = new ArrayList<ProtocolStandard>();
-            this.supportedStandards.add(supportedStandard);
+        public Builder supportedStandard(Protocol protocol) {
+            if (this.supportedStandards == null) this.supportedStandards = new ArrayList<Protocol>();
+            this.supportedStandards.add(protocol);
             return this;
         }
 
-        public Builder supportedStandards(Collection<? extends ProtocolStandard> supportedStandards) {
+        public Builder supportedStandards(Collection<? extends Protocol> supportedStandards) {
             if (supportedStandards == null) return this;
-            if (this.supportedStandards == null) this.supportedStandards = new ArrayList<ProtocolStandard>();
+            if (this.supportedStandards == null) this.supportedStandards = new ArrayList<Protocol>();
             this.supportedStandards.addAll(supportedStandards);
             return this;
         }
@@ -931,229 +931,109 @@ public record Asset(
         }
 
         public Asset build() {
-            List<Map<String, String>> assetAlternativeIds;
-            switch (this.assetAlternativeIds == null ? 0 : this.assetAlternativeIds.size()) {
-                case 0:
-                    assetAlternativeIds = Collections.emptyList();
-                    break;
-                default:
-                    assetAlternativeIds = Collections.unmodifiableList(this.assetAlternativeIds);
-            }
-            List<AssetPlatform> supportedPlatforms;
-            switch (this.supportedPlatforms == null ? 0 : this.supportedPlatforms.size()) {
-                case 0:
-                    supportedPlatforms = Collections.emptyList();
-                    break;
-                case 1:
-                    supportedPlatforms = Collections.singletonList(this.supportedPlatforms.get(0));
-                    break;
-                default:
-                    supportedPlatforms = Collections.unmodifiableList(new ArrayList<AssetPlatform>(this.supportedPlatforms));
-            }
-            List<AssetCustodian> assetCustodians;
-            switch (this.assetCustodians == null ? 0 : this.assetCustodians.size()) {
-                case 0:
-                    assetCustodians = Collections.emptyList();
-                    break;
-                case 1:
-                    assetCustodians = Collections.singletonList(this.assetCustodians.get(0));
-                    break;
-                default:
-                    assetCustodians = Collections.unmodifiableList(new ArrayList<AssetCustodian>(this.assetCustodians));
-            }
-            List<Map<String, String>> assetSecurityMetrics;
-            switch (this.assetSecurityMetrics == null ? 0 : this.assetSecurityMetrics.size()) {
-                case 0:
-                    assetSecurityMetrics = Collections.emptyList();
-                    break;
-                case 1:
-                    assetSecurityMetrics = Collections.singletonList(this.assetSecurityMetrics.get(0));
-                    break;
-                default:
-                    assetSecurityMetrics = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.assetSecurityMetrics));
-            }
-            List<Map<String, String>> burnAddresses;
-            switch (this.burnAddresses == null ? 0 : this.burnAddresses.size()) {
-                case 0:
-                    burnAddresses = Collections.emptyList();
-                    break;
-                case 1:
-                    burnAddresses = Collections.singletonList(this.burnAddresses.get(0));
-                    break;
-                default:
-                    burnAddresses = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.burnAddresses));
-            }
-            List<Map<String, String>> lockedAddresses;
-            switch (this.lockedAddresses == null ? 0 : this.lockedAddresses.size()) {
-                case 0:
-                    lockedAddresses = Collections.emptyList();
-                    break;
-                case 1:
-                    lockedAddresses = Collections.singletonList(this.lockedAddresses.get(0));
-                    break;
-                default:
-                    lockedAddresses = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.lockedAddresses));
-            }
-            List<ProtocolStandard> supportedStandards;
-            switch (this.supportedStandards == null ? 0 : this.supportedStandards.size()) {
-                case 0:
-                    supportedStandards = Collections.emptyList();
-                    break;
-                case 1:
-                    supportedStandards = Collections.singletonList(this.supportedStandards.get(0));
-                    break;
-                default:
-                    supportedStandards = Collections.unmodifiableList(new ArrayList<ProtocolStandard>(this.supportedStandards));
-            }
-            List<Map<String, Object>> layerTwoSolutions;
-            switch (this.layerTwoSolutions == null ? 0 : this.layerTwoSolutions.size()) {
-                case 0:
-                    layerTwoSolutions = Collections.emptyList();
-                    break;
-                case 1:
-                    layerTwoSolutions = Collections.singletonList(this.layerTwoSolutions.get(0));
-                    break;
-                default:
-                    layerTwoSolutions = Collections.unmodifiableList(new ArrayList<Map<String, Object>>(this.layerTwoSolutions));
-            }
-            List<Map<String, Object>> privacySolutions;
-            switch (this.privacySolutions == null ? 0 : this.privacySolutions.size()) {
-                case 0:
-                    privacySolutions = Collections.emptyList();
-                    break;
-                case 1:
-                    privacySolutions = Collections.singletonList(this.privacySolutions.get(0));
-                    break;
-                default:
-                    privacySolutions = Collections.unmodifiableList(new ArrayList<Map<String, Object>>(this.privacySolutions));
-            }
-            List<Map<String, Object>> codeRepositories;
-            switch (this.codeRepositories == null ? 0 : this.codeRepositories.size()) {
-                case 0:
-                    codeRepositories = Collections.emptyList();
-                    break;
-                case 1:
-                    codeRepositories = Collections.singletonList(this.codeRepositories.get(0));
-                    break;
-                default:
-                    codeRepositories = Collections.unmodifiableList(new ArrayList<Map<String, Object>>(this.codeRepositories));
-            }
-            List<Map<String, String>> otherSocialNetworks;
-            switch (this.otherSocialNetworks == null ? 0 : this.otherSocialNetworks.size()) {
-                case 0:
-                    otherSocialNetworks = Collections.emptyList();
-                    break;
-                case 1:
-                    otherSocialNetworks = Collections.singletonList(this.otherSocialNetworks.get(0));
-                    break;
-                default:
-                    otherSocialNetworks = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.otherSocialNetworks));
-            }
-            List<OtherDocumentsUrl> otherDocumentUrls;
-            switch (this.otherDocumentUrls == null ? 0 : this.otherDocumentUrls.size()) {
-                case 0:
-                    otherDocumentUrls = Collections.emptyList();
-                    break;
-                case 1:
-                    otherDocumentUrls = Collections.singletonList(this.otherDocumentUrls.getFirst());
-                    break;
-                default:
-                    otherDocumentUrls = Collections.unmodifiableList(this.otherDocumentUrls);
-            }
-            List<Map<String, String>> explorerAddresses;
-            switch (this.explorerAddresses == null ? 0 : this.explorerAddresses.size()) {
-                case 0:
-                    explorerAddresses = Collections.emptyList();
-                    break;
-                case 1:
-                    explorerAddresses = Collections.singletonList(this.explorerAddresses.get(0));
-                    break;
-                default:
-                    explorerAddresses = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.explorerAddresses));
-            }
-            List<Map<String, String>> rpcOperators;
-            switch (this.rpcOperators == null ? 0 : this.rpcOperators.size()) {
-                case 0:
-                    rpcOperators = Collections.emptyList();
-                    break;
-                case 1:
-                    rpcOperators = Collections.singletonList(this.rpcOperators.get(0));
-                    break;
-                default:
-                    rpcOperators = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.rpcOperators));
-            }
-            List<Map<String, String>> assetIndustries;
-            switch (this.assetIndustries == null ? 0 : this.assetIndustries.size()) {
-                case 0:
-                    assetIndustries = Collections.emptyList();
-                    break;
-                case 1:
-                    assetIndustries = Collections.singletonList(this.assetIndustries.get(0));
-                    break;
-                default:
-                    assetIndustries = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.assetIndustries));
-            }
-            List<Map<String, String>> consensusMechanisms;
-            switch (this.consensusMechanisms == null ? 0 : this.consensusMechanisms.size()) {
-                case 0:
-                    consensusMechanisms = Collections.emptyList();
-                    break;
-                case 1:
-                    consensusMechanisms = Collections.singletonList(this.consensusMechanisms.get(0));
-                    break;
-                default:
-                    consensusMechanisms = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.consensusMechanisms));
-            }
-            List<Map<String, String>> consensusAlgorithmTypes;
-            switch (this.consensusAlgorithmTypes == null ? 0 : this.consensusAlgorithmTypes.size()) {
-                case 0:
-                    consensusAlgorithmTypes = Collections.emptyList();
-                    break;
-                case 1:
-                    consensusAlgorithmTypes = Collections.singletonList(this.consensusAlgorithmTypes.get(0));
-                    break;
-                default:
-                    consensusAlgorithmTypes = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.consensusAlgorithmTypes));
-            }
-            List<Map<String, String>> hashingAlgorithmTypes;
-            switch (this.hashingAlgorithmTypes == null ? 0 : this.hashingAlgorithmTypes.size()) {
-                case 0:
-                    hashingAlgorithmTypes = Collections.emptyList();
-                    break;
-                case 1:
-                    hashingAlgorithmTypes = Collections.singletonList(this.hashingAlgorithmTypes.get(0));
-                    break;
-                default:
-                    hashingAlgorithmTypes = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.hashingAlgorithmTypes));
-            }
-            List<Map<String, String>> projectLeaders;
-            switch (this.projectLeaders == null ? 0 : this.projectLeaders.size()) {
-                case 0:
-                    projectLeaders = Collections.emptyList();
-                    break;
-                case 1:
-                    projectLeaders = Collections.singletonList(this.projectLeaders.get(0));
-                    break;
-                default:
-                    projectLeaders = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.projectLeaders));
-            }
-            List<Map<String, String>> associatedContactDetails;
-            switch (this.associatedContactDetails == null ? 0 : this.associatedContactDetails.size()) {
-                case 0:
-                    associatedContactDetails = Collections.emptyList();
-                    break;
-                case 1:
-                    associatedContactDetails = Collections.singletonList(this.associatedContactDetails.get(0));
-                    break;
-                default:
-                    associatedContactDetails = Collections.unmodifiableList(new ArrayList<Map<String, String>>(this.associatedContactDetails));
-            }
+            List<Map<String, String>> assetAlternativeIds = switch (this.assetAlternativeIds == null ? 0 : this.assetAlternativeIds.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.assetAlternativeIds.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.assetAlternativeIds));
+            };
+            List<AssetPlatform> supportedPlatforms = switch (this.supportedPlatforms == null ? 0 : this.supportedPlatforms.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.supportedPlatforms.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.supportedPlatforms));
+            };
+            List<AssetCustodian> assetCustodians = switch (this.assetCustodians == null ? 0 : this.assetCustodians.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.assetCustodians.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.assetCustodians));
+            };
+            List<Map<String, String>> assetSecurityMetrics = switch (this.assetSecurityMetrics == null ? 0 : this.assetSecurityMetrics.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.assetSecurityMetrics.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.assetSecurityMetrics));
+            };
+            List<Map<String, String>> burnAddresses = switch (this.burnAddresses == null ? 0 : this.burnAddresses.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.burnAddresses.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.burnAddresses));
+            };
+            List<Map<String, String>> lockedAddresses = switch (this.lockedAddresses == null ? 0 : this.lockedAddresses.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.lockedAddresses.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.lockedAddresses));
+            };
+            List<Protocol> supportedStandards = switch (this.supportedStandards == null ? 0 : this.supportedStandards.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.supportedStandards.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.supportedStandards));
+            };
+            List<Map<String, Object>> layerTwoSolutions = switch (this.layerTwoSolutions == null ? 0 : this.layerTwoSolutions.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.layerTwoSolutions.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.layerTwoSolutions));
+            };
+            List<Map<String, Object>> privacySolutions = switch (this.privacySolutions == null ? 0 : this.privacySolutions.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.privacySolutions.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.privacySolutions));
+            };
+            List<Map<String, Object>> codeRepositories = switch (this.codeRepositories == null ? 0 : this.codeRepositories.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.codeRepositories.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.codeRepositories));
+            };
+            List<Map<String, String>> otherSocialNetworks = switch (this.otherSocialNetworks == null ? 0 : this.otherSocialNetworks.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.otherSocialNetworks.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.otherSocialNetworks));
+            };
+            List<OtherDocumentsUrl> otherDocumentUrls = switch (this.otherDocumentUrls == null ? 0 : this.otherDocumentUrls.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.otherDocumentUrls.getFirst());
+                default -> Collections.unmodifiableList(this.otherDocumentUrls);
+            };
+            List<Map<String, String>> explorerAddresses = switch (this.explorerAddresses == null ? 0 : this.explorerAddresses.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.explorerAddresses.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.explorerAddresses));
+            };
+            List<Map<String, String>> rpcOperators = switch (this.rpcOperators == null ? 0 : this.rpcOperators.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.rpcOperators.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.rpcOperators));
+            };
+            List<Map<String, String>> assetIndustries = switch (this.assetIndustries == null ? 0 : this.assetIndustries.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.assetIndustries.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.assetIndustries));
+            };
+            List<Map<String, String>> consensusMechanisms = switch (this.consensusMechanisms == null ? 0 : this.consensusMechanisms.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.consensusMechanisms.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.consensusMechanisms));
+            };
+            List<Map<String, String>> consensusAlgorithmTypes = switch (this.consensusAlgorithmTypes == null ? 0 : this.consensusAlgorithmTypes.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.consensusAlgorithmTypes.getFirst());
+                default ->
+                        Collections.unmodifiableList(new ArrayList<>(this.consensusAlgorithmTypes));
+            };
+            List<Map<String, String>> hashingAlgorithmTypes = switch (this.hashingAlgorithmTypes == null ? 0 : this.hashingAlgorithmTypes.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.hashingAlgorithmTypes.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.hashingAlgorithmTypes));
+            };
+            List<Map<String, String>> projectLeaders = switch (this.projectLeaders == null ? 0 : this.projectLeaders.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.projectLeaders.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.projectLeaders));
+            };
+            List<Map<String, String>> associatedContactDetails = switch (this.associatedContactDetails == null ? 0 : this.associatedContactDetails.size()) {
+                case 0 -> Collections.emptyList();
+                case 1 -> Collections.singletonList(this.associatedContactDetails.getFirst());
+                default -> Collections.unmodifiableList(new ArrayList<>(this.associatedContactDetails));
+            };
 
             return new Asset(this.id, this.symbol, this.uri, this.assetType, this.assetIssuerName, this.parentAssetSymbol, this.createdOn, this.updatedOn, this.publicNotice, this.name, this.launchDate, assetAlternativeIds, this.assetDescriptionSnippet, this.assetDecimalPoints, supportedPlatforms, assetCustodians, assetSecurityMetrics, this.supplyMax, this.supplyIssued, this.supplyTotal, this.supplyCirculating, this.supplyFuture, this.supplyLocked, this.supplyBurnt, this.supplyStaked, burnAddresses, lockedAddresses, this.hasSmartContractCapabilities, this.smartContractSupportType, this.lastBlockHashesPerSecond, this.lastBlockDifficulty, supportedStandards, layerTwoSolutions, privacySolutions, codeRepositories, otherSocialNetworks, this.heldTokenSale, this.heldEquitySale, this.websiteUrl, this.blogUrl, this.whitePaperUrl, otherDocumentUrls, explorerAddresses, rpcOperators, this.assetSymbolGlyph, assetIndustries, consensusMechanisms, consensusAlgorithmTypes, hashingAlgorithmTypes, this.mktCapPenalty, this.circulatingMktCapUsd, this.totalMktCapUsd, this.assetDescription, this.assetDescriptionSummary, projectLeaders, associatedContactDetails, this.seoTitle, this.seoDescription);
-        }
-
-        public String toString() {
-            return "Asset.Builder(id=" + this.id + ", symbol=" + this.symbol + ", uri=" + this.uri + ", assetType=" + this.assetType + ", assetIssuerName=" + this.assetIssuerName + ", parentAssetSymbol=" + this.parentAssetSymbol + ", createdOn=" + this.createdOn + ", updatedOn=" + this.updatedOn + ", publicNotice=" + this.publicNotice + ", name=" + this.name + ", launchDate=" + this.launchDate + ", assetAlternativeIds=" + this.assetAlternativeIds + ", assetDescriptionSnippet=" + this.assetDescriptionSnippet + ", assetDecimalPoints=" + this.assetDecimalPoints + ", supportedPlatforms=" + this.supportedPlatforms + ", assetCustodians=" + this.assetCustodians + ", assetSecurityMetrics=" + this.assetSecurityMetrics + ", supplyMax=" + this.supplyMax + ", supplyIssued=" + this.supplyIssued + ", supplyTotal=" + this.supplyTotal + ", supplyCirculating=" + this.supplyCirculating + ", supplyFuture=" + this.supplyFuture + ", supplyLocked=" + this.supplyLocked + ", supplyBurnt=" + this.supplyBurnt + ", supplyStaked=" + this.supplyStaked + ", burnAddresses=" + this.burnAddresses + ", lockedAddresses=" + this.lockedAddresses + ", hasSmartContractCapabilities=" + this.hasSmartContractCapabilities + ", smartContractSupportType=" + this.smartContractSupportType + ", lastBlockHashesPerSecond=" + this.lastBlockHashesPerSecond + ", lastBlockDifficulty=" + this.lastBlockDifficulty + ", supportedStandards=" + this.supportedStandards + ", layerTwoSolutions=" + this.layerTwoSolutions + ", privacySolutions=" + this.privacySolutions + ", codeRepositories=" + this.codeRepositories + ", otherSocialNetworks=" + this.otherSocialNetworks + ", heldTokenSale=" + this.heldTokenSale + ", heldEquitySale=" + this.heldEquitySale + ", websiteUrl=" + this.websiteUrl + ", blogUrl=" + this.blogUrl + ", whitePaperUrl=" + this.whitePaperUrl + ", otherDocumentUrls=" + this.otherDocumentUrls + ", explorerAddresses=" + this.explorerAddresses + ", rpcOperators=" + this.rpcOperators + ", assetSymbolGlyph=" + this.assetSymbolGlyph + ", assetIndustries=" + this.assetIndustries + ", consensusMechanisms=" + this.consensusMechanisms + ", consensusAlgorithmTypes=" + this.consensusAlgorithmTypes + ", hashingAlgorithmTypes=" + this.hashingAlgorithmTypes + ", mktCapPenalty=" + this.mktCapPenalty + ", circulatingMktCapUsd=" + this.circulatingMktCapUsd + ", totalMktCapUsd=" + this.totalMktCapUsd + ", assetDescription=" + this.assetDescription + ", assetDescriptionSummary=" + this.assetDescriptionSummary + ", projectLeaders=" + this.projectLeaders + ", associatedContactDetails=" + this.associatedContactDetails + ", seoTitle=" + this.seoTitle + ", seoDescription=" + this.seoDescription + ")";
         }
     }
 

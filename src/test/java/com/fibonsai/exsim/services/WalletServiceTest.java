@@ -30,8 +30,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
-import static com.fibonsai.exsim.services.WalletService.State.*;
-import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_ASSET;
+import static com.fibonsai.exsim.services.WalletService.WalletState.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
@@ -40,6 +39,9 @@ public class WalletServiceTest {
 
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private AssetService assetService;
 
     private final Asset USD = AssetUtil.fromCurrency(Currency.getInstance("USD"));
     private final Asset EUR = AssetUtil.fromCurrency(Currency.getInstance("EUR"));
@@ -87,7 +89,7 @@ public class WalletServiceTest {
             StepVerifier.create(walletService.createDefaultWallet(owner))
                 .consumeNextWith(wallet -> {
                     assertEquals(owner, wallet.owner());
-                    assertEquals(DEFAULT_ASSET, wallet.asset());
+                    assertEquals(assetService.defaultAsset(), wallet.asset());
                     assertNotNull(wallet.address());
                     assertEquals(BigDecimal.ZERO, wallet.amount());
                     assertEquals(OFFLINE, wallet.state());
@@ -160,7 +162,7 @@ public class WalletServiceTest {
     @Test
     void createWallet_throwIfNotAllowedMultiAddress() {
         String owner = "testOwner";
-        walletService.currenciesWithOnlyOneAddress(Set.of(USD.name()));
+        walletService.assetWithOneAddress(Set.of(USD.name()));
 
         StepVerifier.create(walletService.events().take(1)).then(() ->
             StepVerifier.create(walletService.createWallet(owner, USD)).then(() ->

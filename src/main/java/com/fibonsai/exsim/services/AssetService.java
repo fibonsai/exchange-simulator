@@ -17,7 +17,6 @@ package com.fibonsai.exsim.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fibonsai.exsim.dto.Asset;
-import com.fibonsai.exsim.dto.CurrencyPair;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,8 +35,15 @@ public class AssetService {
 
     private final ObjectMapper mapper;
 
+    public static final String DEFAULT_ASSET = "USD";
+
     public AssetService(ObjectMapper mapper) {
         this.mapper = mapper;
+    }
+
+    public Asset defaultAsset() {
+        return Optional.ofNullable(assets().get(DEFAULT_ASSET))
+                .orElseThrow(() -> new RuntimeException("AssetService not initialized"));
     }
 
     private final Map<String, Asset> assets = new ConcurrentHashMap<>();
@@ -47,11 +53,12 @@ public class AssetService {
     }
 
     public void add(Asset asset) {
-        assets.computeIfAbsent(asset.name(), name -> asset);
+        assets.computeIfAbsent(asset.symbol(), name -> asset);
     }
 
     public void loadFiatAssets() {
         Currency.getAvailableCurrencies().forEach(this::add);
+        log.info("Loaded {} Currencies (FIAT)", assets().size());
     }
 
     public void loadFromFile() {
@@ -63,6 +70,9 @@ public class AssetService {
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("assets")).orElseThrow();
             jsonNodeAssets.forEachEntry((k, v) -> add(mapper.convertValue(v, Asset.class)));
+            log.info("Loaded {} CryptoCurrencies", assets().size());
+
+            log.info(assets().get("BTC").assetCustodians().toString());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -75,53 +85,6 @@ public class AssetService {
 
     public Map<String, Asset> assets() {
         return Collections.unmodifiableMap(assets);
-    }
-
-    public CurrencyPair convertPairFromString(String currencyPair) {
-        String[] currencies = currencyPair.split(AssetUtil.DEFAULT_SEPARATOR);
-        if (currencies.length != 2 && currencyPair.length() != 6 && currencyPair.length() != 3) {
-            throw new IllegalArgumentException(currencyPair);
-        }
-
-        Asset baseAsset = AssetUtil.DEFAULT_BASE;
-        Asset quoteAsset = AssetUtil.DEFAULT_QUOTE;
-        if (currencies.length == 2) {
-            try {
-                Currency baseCurrencyInstance = Currency.getInstance(currencies[0]);
-                baseAsset = AssetUtil.fromCurrency(baseCurrencyInstance);
-            } catch (IllegalArgumentException | NullPointerException e) {
-                baseAsset = Asset.builder().name(currencies[0]).build();
-            }
-            try {
-                Currency quoteCurrencyInstance = Currency.getInstance(currencies[1]);
-                quoteAsset = AssetUtil.fromCurrency(quoteCurrencyInstance);
-            } catch (IllegalArgumentException | NullPointerException e) {
-                quoteAsset = Asset.builder().name(currencies[1]).build();
-            }
-        }
-        if (currencyPair.length() == 6) {
-            try {
-                Currency baseCurrencyInstance = Currency.getInstance(currencyPair.substring(0, 2));
-                baseAsset = AssetUtil.fromCurrency(baseCurrencyInstance);
-            } catch (IllegalArgumentException | NullPointerException e) {
-                baseAsset = Asset.builder().name(currencyPair.substring(0, 2)).build();
-            }
-            try {
-                Currency quoteCurrencyInstance = Currency.getInstance(currencyPair.substring(3, 5));
-                quoteAsset = AssetUtil.fromCurrency(quoteCurrencyInstance);
-            } catch (IllegalArgumentException | NullPointerException e) {
-                quoteAsset = Asset.builder().name(currencyPair.substring(3, 5)).build();
-            }
-        }
-        if (currencyPair.length() == 3) {
-            try {
-                Currency baseCurrencyInstance = Currency.getInstance(currencyPair);
-                baseAsset = AssetUtil.fromCurrency(Currency.getInstance(currencyPair));
-            } catch (IllegalArgumentException | NullPointerException e) {
-                baseAsset = Asset.builder().name(currencyPair).build();
-            }
-        }
-        return CurrencyPair.builder().setBaseAsset(baseAsset).setQuoteAsset(quoteAsset).build();
     }
 
 }
