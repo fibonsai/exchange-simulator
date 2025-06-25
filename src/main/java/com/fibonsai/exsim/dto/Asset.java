@@ -18,200 +18,89 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @JsonDeserialize(builder = Asset.Builder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Asset(
-        @JsonProperty("ID")
-        String id,
-
-        @JsonProperty("SYMBOL")
+        Long id,
         String symbol,
-
-        @JsonProperty("URI")
         String uri,
-
-        @JsonProperty("ASSET_TYPE")
         AssetType assetType,
-
-        @JsonProperty("ASSET_ISSUER_NAME")
         String assetIssuerName,
-
-        @JsonProperty("PARENT_ASSET_SYMBOL")
         String parentAssetSymbol,
-
-        @JsonProperty("CREATED_ON")
         Long createdOn,
-
-        @JsonProperty("UPDATED_ON")
         Long updatedOn,
-
-        @JsonProperty("PUBLIC_NOTICE")
         String publicNotice,
-
-        @JsonProperty("NAME")
         String name,
-
-        @JsonProperty("LAUNCH_DATE")
         Long launchDate,
-
-        @JsonProperty("ASSET_ALTERNATIVE_IDS")
-        Map<String, String> assetAlternativeIds,
-
-        @JsonProperty("ASSET_DESCRIPTION_SNIPPET")
+        List<Map<String, String>> assetAlternativeIds,
         String assetDescriptionSnippet,
-
-        @JsonProperty("ASSET_DECIMAL_POINTS")
         BigDecimal assetDecimalPoints,
-
-        @JsonProperty("SUPPORTED_PLATFORMS")
         List<AssetPlatform> supportedPlatforms,
-
-        @JsonProperty("ASSET_CUSTODIANS")
         List<AssetCustodian> assetCustodians,
-
-        @JsonProperty("ASSET_SECURITY_METRICS")
         List<Map<String, String>> assetSecurityMetrics,
-
-        @JsonProperty("SUPPLY_MAX")
         BigDecimal supplyMax,
-
-        @JsonProperty("SUPPLY_ISSUED")
         BigDecimal supplyIssued,
-
-        @JsonProperty("SUPPLY_TOTAL")
         BigDecimal supplyTotal,
-
-        @JsonProperty("SUPPLY_CIRCULATING")
         BigDecimal supplyCirculating,
-
-        @JsonProperty("SUPPLY_FUTURE")
         BigDecimal supplyFuture,
-
-        @JsonProperty("SUPPLY_LOCKED")
         BigDecimal supplyLocked,
-
-        @JsonProperty("SUPPLY_BURNT")
         BigDecimal supplyBurnt,
-
-        @JsonProperty("SUPPLY_STAKED")
         BigDecimal supplyStaked,
-
-        @JsonProperty("BURN_ADDRESSES")
         List<Map<String, String>> burnAddresses,
-
-        @JsonProperty("LOCKED_ADDRESSES")
         List<Map<String, String>> lockedAddresses,
-
-        @JsonProperty("HAS_SMART_CONTRACT_CAPABILITIES")
         Boolean hasSmartContractCapabilities,
-
-        @JsonProperty("SMART_CONTRACT_SUPPORT_TYPE")
         SmartContractSupportType smartContractSupportType,
-
-        @JsonProperty("LAST_BLOCK_HASHES_PER_SECOND")
         BigDecimal lastBlockHashesPerSecond,
-
-        @JsonProperty("LAST_BLOCK_DIFFICULTY")
         BigDecimal lastBlockDifficulty,
-
-        @JsonProperty("SUPPORTED_STANDARDS")
         List<ProtocolStandard> supportedStandards,
-
-        @JsonProperty("LAYER_TWO_SOLUTIONS")
         List<Map<String, Object>> layerTwoSolutions,
-
-        @JsonProperty("PRIVACY_SOLUTIONS")
         List<Map<String, Object>> privacySolutions,
-
-        @JsonProperty("CODE_REPOSITORIES")
         List<Map<String, Object>> codeRepositories,
-
-        @JsonProperty("OTHER_SOCIAL_NETWORKS")
         List<Map<String, String>> otherSocialNetworks,
-
-        @JsonProperty("HELD_TOKEN_SALE")
         Boolean heldTokenSale,
-
-        @JsonProperty("HELD_EQUITY_SALE")
         Boolean heldEquitySale,
-
-        @JsonProperty("WEBSITE_URL")
         String websiteUrl,
-
-        @JsonProperty("BLOG_URL")
         String blogUrl,
-
-        @JsonProperty("WHITE_PAPER_URL")
         String whitePaperUrl,
-
-        @JsonProperty("OTHER_DOCUMENT_URLS")
         List<Map<String,String>> otherDocumentUrls,
-
-        @JsonProperty("EXPLORER_ADDRESSES")
         List<Map<String, String>> explorerAddresses,
-
-        @JsonProperty("RPC_OPERATORS")
         List<Map<String, String>> rpcOperators,
-
-        @JsonProperty("ASSET_SYMBOL_GLYPH")
         String assetSymbolGlyph,
-
-        @JsonProperty("ASSET_INDUSTRIES")
         List<Map<String, String>> assetIndustries,
-
-        @JsonProperty("CONSENSUS_MECHANISMS")
         List<Map<String, String>> consensusMechanisms,
-
-        @JsonProperty("CONSENSUS_ALGORITHM_TYPES")
         List<Map<String, String>> consensusAlgorithmTypes,
-
-        @JsonProperty("HASHING_ALGORITHM_TYPES")
         List<Map<String, String>> hashingAlgorithmTypes,
-
-        @JsonProperty("MKT_CAP_PENALTY")
         BigDecimal mktCapPenalty,
-
-        @JsonProperty("CIRCULATING_MKT_CAP_USD")
         BigDecimal circulatingMktCapUsd,
-
-        @JsonProperty("TOTAL_MKT_CAP_USD")
         BigDecimal totalMktCapUsd,
-
-        @JsonProperty("ASSET_DESCRIPTION")
         String assetDescription,
-
-        @JsonProperty("ASSET_DESCRIPTION_SUMMARY")
         String assetDescriptionSummary,
-
-        @JsonProperty("PROJECT_LEADERS")
         List<Map<String, String>> projectLeaders,
-
-        @JsonProperty("ASSOCIATED_CONTACT_DETAILS")
         List<Map<String, String>> associatedContactDetails,
-
-        @JsonProperty("SEO_TITLE")
         String seoTitle,
-
-        @JsonProperty("SEO_DESCRIPTION")
         String seoDescription
 
 ) implements Serializable, Comparable<Asset> {
 
+    @Serial
     private static final long serialVersionUID = -7340731832345284129L;
 
     private static final Map<String, Asset> assets = new ConcurrentHashMap<>();
 
-    public static final Asset NULL = Asset.builder().id("NULL").name("NULL").build();
+    public static final Asset NULL = Asset.builder().id(-1L).name("NULL").build();
 
     public static Asset fromCurrency(Currency currency) {
         return Asset.builder()
-                .id(currency.getCurrencyCode())
+                .id((long) currency.getNumericCode())
                 .name(currency.getCurrencyCode())
                 .assetDescription(currency.getDisplayName())
                 .assetSymbolGlyph(currency.getSymbol())
@@ -235,6 +124,10 @@ public record Asset(
 
     public static void loadFromFile() {
         throw new UnsupportedOperationException("WIP");
+    }
+
+    public static Map<String, Asset> assets() {
+        return Collections.unmodifiableMap(assets);
     }
 
     public static Builder builder() {
@@ -322,71 +215,189 @@ public record Asset(
 
     @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
-        private String id = UUID.randomUUID().toString();
-        private String symbol = "";
-        private String uri = "";
-        private AssetType assetType = AssetType.UNDEF;
-        private String assetIssuerName = "";
-        private String parentAssetSymbol = "";
-        private Long createdOn = 0L;
-        private Long updatedOn = 0L;
-        private String publicNotice = "";
-        private String name = "";
-        private Long launchDate = 0L;
-        private ArrayList<String> assetAlternativeIds$key = new ArrayList<>();
-        private ArrayList<String> assetAlternativeIds$value = new ArrayList<>();
-        private String assetDescriptionSnippet = "";
-        private BigDecimal assetDecimalPoints = BigDecimal.TWO;
-        private ArrayList<AssetPlatform> supportedPlatforms = new ArrayList<>();
-        private ArrayList<AssetCustodian> assetCustodians = new ArrayList<>();
-        private ArrayList<Map<String, String>> assetSecurityMetrics = new ArrayList<>();
-        private BigDecimal supplyMax = BigDecimal.ZERO;
-        private BigDecimal supplyIssued = BigDecimal.ZERO;
-        private BigDecimal supplyTotal = BigDecimal.ZERO;
-        private BigDecimal supplyCirculating = BigDecimal.ZERO;
-        private BigDecimal supplyFuture = BigDecimal.ZERO;
-        private BigDecimal supplyLocked = BigDecimal.ZERO;
-        private BigDecimal supplyBurnt = BigDecimal.ZERO;
-        private BigDecimal supplyStaked = BigDecimal.ZERO;
-        private ArrayList<Map<String, String>> burnAddresses = new ArrayList<>();
-        private ArrayList<Map<String, String>> lockedAddresses = new ArrayList<>();
-        private Boolean hasSmartContractCapabilities = false;
-        private SmartContractSupportType smartContractSupportType = SmartContractSupportType.UNDEF;
-        private BigDecimal lastBlockHashesPerSecond = BigDecimal.ZERO;
-        private BigDecimal lastBlockDifficulty = BigDecimal.ZERO;
-        private ArrayList<ProtocolStandard> supportedStandards = new ArrayList<>();
-        private ArrayList<Map<String, Object>> layerTwoSolutions = new ArrayList<>();
-        private ArrayList<Map<String, Object>> privacySolutions = new ArrayList<>();
-        private ArrayList<Map<String, Object>> codeRepositories = new ArrayList<>();
-        private ArrayList<Map<String, String>> otherSocialNetworks = new ArrayList<>();
-        private Boolean heldTokenSale = false;
-        private Boolean heldEquitySale = false;
-        private String websiteUrl = "";
-        private String blogUrl = "";
-        private String whitePaperUrl = "";
-        private List<Map<String, String>> otherDocumentUrls = new ArrayList<>();
-        private ArrayList<Map<String, String>> explorerAddresses = new ArrayList<>();
-        private ArrayList<Map<String, String>> rpcOperators = new ArrayList<>();
-        private String assetSymbolGlyph = "";
-        private ArrayList<Map<String, String>> assetIndustries = new ArrayList<>();
-        private ArrayList<Map<String, String>> consensusMechanisms = new ArrayList<>();
-        private ArrayList<Map<String, String>> consensusAlgorithmTypes = new ArrayList<>();
-        private ArrayList<Map<String, String>> hashingAlgorithmTypes = new ArrayList<>();
-        private BigDecimal mktCapPenalty = BigDecimal.ZERO;
-        private BigDecimal circulatingMktCapUsd = BigDecimal.ZERO;
-        private BigDecimal totalMktCapUsd = BigDecimal.ZERO;
-        private String assetDescription = "";
-        private String assetDescriptionSummary = "";
-        private ArrayList<Map<String, String>> projectLeaders = new ArrayList<>();
-        private ArrayList<Map<String, String>> associatedContactDetails = new ArrayList<>();
-        private String seoTitle = "";
-        private String seoDescription = "";
+
+        // Prevent Currency Numeric Code conflict. Assets not-currency start with ID * ID_SHIFT
+        private static final long ID_SHIFT = 1_000L;
+
+        @JsonProperty("ID")
+        Long id = 1_000L;
+
+        @JsonProperty("SYMBOL")
+        String symbol = "";
+
+        @JsonProperty("URI")
+        String uri = "";
+
+        @JsonProperty("ASSET_TYPE")
+        AssetType assetType = AssetType.UNDEF;
+
+        @JsonProperty("ASSET_ISSUER_NAME")
+        String assetIssuerName = "";
+
+        @JsonProperty("PARENT_ASSET_SYMBOL")
+        String parentAssetSymbol = "";
+
+        @JsonProperty("CREATED_ON")
+        Long createdOn = 0L;
+
+        @JsonProperty("UPDATED_ON")
+        Long updatedOn = 0L;
+
+        @JsonProperty("PUBLIC_NOTICE")
+        String publicNotice = "";
+
+        @JsonProperty("NAME")
+        String name = "";
+
+        @JsonProperty("LAUNCH_DATE")
+        Long launchDate = 0L;
+
+        @JsonProperty("ASSET_ALTERNATIVE_IDS")
+        List<Map<String, String>> assetAlternativeIds = new ArrayList<>();
+
+        @JsonProperty("ASSET_DESCRIPTION_SNIPPET")
+        String assetDescriptionSnippet = "";
+
+        @JsonProperty("ASSET_DECIMAL_POINTS")
+        BigDecimal assetDecimalPoints = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPORTED_PLATFORMS")
+        List<AssetPlatform> supportedPlatforms = new ArrayList<>();
+
+        @JsonProperty("ASSET_CUSTODIANS")
+        List<AssetCustodian> assetCustodians = new ArrayList<>();
+
+        @JsonProperty("ASSET_SECURITY_METRICS")
+        List<Map<String, String>> assetSecurityMetrics = new ArrayList<>();
+
+        @JsonProperty("SUPPLY_MAX")
+        BigDecimal supplyMax = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_ISSUED")
+        BigDecimal supplyIssued = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_TOTAL")
+        BigDecimal supplyTotal = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_CIRCULATING")
+        BigDecimal supplyCirculating = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_FUTURE")
+        BigDecimal supplyFuture = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_LOCKED")
+        BigDecimal supplyLocked = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_BURNT")
+        BigDecimal supplyBurnt = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPLY_STAKED")
+        BigDecimal supplyStaked = BigDecimal.ZERO;
+
+        @JsonProperty("BURN_ADDRESSES")
+        List<Map<String, String>> burnAddresses = new ArrayList<>();
+
+        @JsonProperty("LOCKED_ADDRESSES")
+        List<Map<String, String>> lockedAddresses = new ArrayList<>();
+
+        @JsonProperty("HAS_SMART_CONTRACT_CAPABILITIES")
+        Boolean hasSmartContractCapabilities = false;
+
+        @JsonProperty("SMART_CONTRACT_SUPPORT_TYPE")
+        SmartContractSupportType smartContractSupportType = SmartContractSupportType.UNDEF;
+
+        @JsonProperty("LAST_BLOCK_HASHES_PER_SECOND")
+        BigDecimal lastBlockHashesPerSecond = BigDecimal.ZERO;
+
+        @JsonProperty("LAST_BLOCK_DIFFICULTY")
+        BigDecimal lastBlockDifficulty = BigDecimal.ZERO;
+
+        @JsonProperty("SUPPORTED_STANDARDS")
+        List<ProtocolStandard> supportedStandards = new ArrayList<>();
+
+        @JsonProperty("LAYER_TWO_SOLUTIONS")
+        List<Map<String, Object>> layerTwoSolutions = new ArrayList<>();
+
+        @JsonProperty("PRIVACY_SOLUTIONS")
+        List<Map<String, Object>> privacySolutions = new ArrayList<>();
+
+        @JsonProperty("CODE_REPOSITORIES")
+        List<Map<String, Object>> codeRepositories = new ArrayList<>();
+
+        @JsonProperty("OTHER_SOCIAL_NETWORKS")
+        List<Map<String, String>> otherSocialNetworks = new ArrayList<>();
+
+        @JsonProperty("HELD_TOKEN_SALE")
+        Boolean heldTokenSale = false;
+
+        @JsonProperty("HELD_EQUITY_SALE")
+        Boolean heldEquitySale = false;
+
+        @JsonProperty("WEBSITE_URL")
+        String websiteUrl = "";
+
+        @JsonProperty("BLOG_URL")
+        String blogUrl = "";
+
+        @JsonProperty("WHITE_PAPER_URL")
+        String whitePaperUrl = "";
+
+        @JsonProperty("OTHER_DOCUMENT_URLS")
+        List<Map<String,String>> otherDocumentUrls = new ArrayList<>();
+
+        @JsonProperty("EXPLORER_ADDRESSES")
+        List<Map<String, String>> explorerAddresses = new ArrayList<>();
+
+        @JsonProperty("RPC_OPERATORS")
+        List<Map<String, String>> rpcOperators = new ArrayList<>();
+
+        @JsonProperty("ASSET_SYMBOL_GLYPH")
+        String assetSymbolGlyph = "";
+
+        @JsonProperty("ASSET_INDUSTRIES")
+        List<Map<String, String>> assetIndustries = new ArrayList<>();
+
+        @JsonProperty("CONSENSUS_MECHANISMS")
+        List<Map<String, String>> consensusMechanisms = new ArrayList<>();
+
+        @JsonProperty("CONSENSUS_ALGORITHM_TYPES")
+        List<Map<String, String>> consensusAlgorithmTypes = new ArrayList<>();
+
+        @JsonProperty("HASHING_ALGORITHM_TYPES")
+        List<Map<String, String>> hashingAlgorithmTypes = new ArrayList<>();
+
+        @JsonProperty("MKT_CAP_PENALTY")
+        BigDecimal mktCapPenalty = BigDecimal.ZERO;
+
+        @JsonProperty("CIRCULATING_MKT_CAP_USD")
+        BigDecimal circulatingMktCapUsd = BigDecimal.ZERO;
+
+        @JsonProperty("TOTAL_MKT_CAP_USD")
+        BigDecimal totalMktCapUsd = BigDecimal.ZERO;
+
+        @JsonProperty("ASSET_DESCRIPTION")
+        String assetDescription = "";
+
+        @JsonProperty("ASSET_DESCRIPTION_SUMMARY")
+        String assetDescriptionSummary = "";
+
+        @JsonProperty("PROJECT_LEADERS")
+        List<Map<String, String>> projectLeaders = new ArrayList<>();
+
+        @JsonProperty("ASSOCIATED_CONTACT_DETAILS")
+        List<Map<String, String>> associatedContactDetails = new ArrayList<>();
+
+        @JsonProperty("SEO_TITLE")
+        String seoTitle = "";
+
+        @JsonProperty("SEO_DESCRIPTION")
+        String seoDescription = "";
 
         Builder() {
         }
 
-        public Builder id(String id) {
-            this.id = id;
+        public Builder id(Long id) {
+            this.id = id * ID_SHIFT;
             return this;
         }
 
@@ -440,36 +451,22 @@ public record Asset(
             return this;
         }
 
-        public Builder assetAlternativeId(String assetAlternativeIdKey, String assetAlternativeIdValue) {
-            if (this.assetAlternativeIds$key == null) {
-                this.assetAlternativeIds$key = new ArrayList<String>();
-                this.assetAlternativeIds$value = new ArrayList<String>();
-            }
-            this.assetAlternativeIds$key.add(assetAlternativeIdKey);
-            this.assetAlternativeIds$value.add(assetAlternativeIdValue);
+        public Builder assetAlternativeId(Map<String, String> assetAlternativeId) {
+            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<Map<String, String>>();
+            this.assetAlternativeIds.add(assetAlternativeId);
             return this;
         }
 
-        public Builder assetAlternativeIds(Map<? extends String, ? extends String> assetAlternativeIds) {
-            if (assetAlternativeIds == null) {
-                throw new NullPointerException("assetAlternativeIds cannot be null");
-            }
-            if (this.assetAlternativeIds$key == null) {
-                this.assetAlternativeIds$key = new ArrayList<String>();
-                this.assetAlternativeIds$value = new ArrayList<String>();
-            }
-            for (final Map.Entry<? extends String, ? extends String> $lombokEntry : assetAlternativeIds.entrySet()) {
-                this.assetAlternativeIds$key.add($lombokEntry.getKey());
-                this.assetAlternativeIds$value.add($lombokEntry.getValue());
-            }
+        public Builder assetAlternativeIds(Collection<? extends Map<String, String>> assetSecurityMetrics) {
+            if (assetAlternativeIds == null) return this;
+            if (this.assetAlternativeIds == null) this.assetAlternativeIds = new ArrayList<Map<String, String>>();
+            this.assetAlternativeIds.addAll(assetAlternativeIds);
             return this;
         }
 
         public Builder clearAssetAlternativeIds() {
-            if (this.assetAlternativeIds$key != null) {
-                this.assetAlternativeIds$key.clear();
-                this.assetAlternativeIds$value.clear();
-            }
+            if (this.assetAlternativeIds != null)
+                this.assetAlternativeIds.clear();
             return this;
         }
 
@@ -490,9 +487,7 @@ public record Asset(
         }
 
         public Builder supportedPlatforms(Collection<? extends AssetPlatform> supportedPlatforms) {
-            if (supportedPlatforms == null) {
-                throw new NullPointerException("supportedPlatforms cannot be null");
-            }
+            if (supportedPlatforms == null) return this;
             if (this.supportedPlatforms == null) this.supportedPlatforms = new ArrayList<AssetPlatform>();
             this.supportedPlatforms.addAll(supportedPlatforms);
             return this;
@@ -511,9 +506,7 @@ public record Asset(
         }
 
         public Builder assetCustodians(Collection<? extends AssetCustodian> assetCustodians) {
-            if (assetCustodians == null) {
-                throw new NullPointerException("assetCustodians cannot be null");
-            }
+            if (assetCustodians == null) return this;
             if (this.assetCustodians == null) this.assetCustodians = new ArrayList<AssetCustodian>();
             this.assetCustodians.addAll(assetCustodians);
             return this;
@@ -532,9 +525,7 @@ public record Asset(
         }
 
         public Builder assetSecurityMetrics(Collection<? extends Map<String, String>> assetSecurityMetrics) {
-            if (assetSecurityMetrics == null) {
-                throw new NullPointerException("assetSecurityMetrics cannot be null");
-            }
+            if (assetSecurityMetrics == null) return this;
             if (this.assetSecurityMetrics == null) this.assetSecurityMetrics = new ArrayList<Map<String, String>>();
             this.assetSecurityMetrics.addAll(assetSecurityMetrics);
             return this;
@@ -593,9 +584,7 @@ public record Asset(
         }
 
         public Builder burnAddresses(Collection<? extends Map<String, String>> burnAddresses) {
-            if (burnAddresses == null) {
-                throw new NullPointerException("burnAddresses cannot be null");
-            }
+            if (burnAddresses == null) return this;
             if (this.burnAddresses == null) this.burnAddresses = new ArrayList<Map<String, String>>();
             this.burnAddresses.addAll(burnAddresses);
             return this;
@@ -614,9 +603,7 @@ public record Asset(
         }
 
         public Builder lockedAddresses(Collection<? extends Map<String, String>> lockedAddresses) {
-            if (lockedAddresses == null) {
-                throw new NullPointerException("lockedAddresses cannot be null");
-            }
+            if (lockedAddresses == null) return this;
             if (this.lockedAddresses == null) this.lockedAddresses = new ArrayList<Map<String, String>>();
             this.lockedAddresses.addAll(lockedAddresses);
             return this;
@@ -655,9 +642,7 @@ public record Asset(
         }
 
         public Builder supportedStandards(Collection<? extends ProtocolStandard> supportedStandards) {
-            if (supportedStandards == null) {
-                throw new NullPointerException("supportedStandards cannot be null");
-            }
+            if (supportedStandards == null) return this;
             if (this.supportedStandards == null) this.supportedStandards = new ArrayList<ProtocolStandard>();
             this.supportedStandards.addAll(supportedStandards);
             return this;
@@ -676,9 +661,7 @@ public record Asset(
         }
 
         public Builder layerTwoSolutions(Collection<? extends Map<String, Object>> layerTwoSolutions) {
-            if (layerTwoSolutions == null) {
-                throw new NullPointerException("layerTwoSolutions cannot be null");
-            }
+            if (layerTwoSolutions == null) return this;
             if (this.layerTwoSolutions == null) this.layerTwoSolutions = new ArrayList<Map<String, Object>>();
             this.layerTwoSolutions.addAll(layerTwoSolutions);
             return this;
@@ -697,9 +680,7 @@ public record Asset(
         }
 
         public Builder privacySolutions(Collection<? extends Map<String, Object>> privacySolutions) {
-            if (privacySolutions == null) {
-                throw new NullPointerException("privacySolutions cannot be null");
-            }
+            if (privacySolutions == null) return this;
             if (this.privacySolutions == null) this.privacySolutions = new ArrayList<Map<String, Object>>();
             this.privacySolutions.addAll(privacySolutions);
             return this;
@@ -718,9 +699,7 @@ public record Asset(
         }
 
         public Builder codeRepositories(Collection<? extends Map<String, Object>> codeRepositories) {
-            if (codeRepositories == null) {
-                throw new NullPointerException("codeRepositories cannot be null");
-            }
+            if (codeRepositories == null) return this;
             if (this.codeRepositories == null) this.codeRepositories = new ArrayList<Map<String, Object>>();
             this.codeRepositories.addAll(codeRepositories);
             return this;
@@ -739,9 +718,7 @@ public record Asset(
         }
 
         public Builder otherSocialNetworks(Collection<? extends Map<String, String>> otherSocialNetworks) {
-            if (otherSocialNetworks == null) {
-                throw new NullPointerException("otherSocialNetworks cannot be null");
-            }
+            if (otherSocialNetworks == null) return this;
             if (this.otherSocialNetworks == null) this.otherSocialNetworks = new ArrayList<Map<String, String>>();
             this.otherSocialNetworks.addAll(otherSocialNetworks);
             return this;
@@ -784,10 +761,8 @@ public record Asset(
             return this;
         }
 
-        public Builder otherDocumentUrls(Collection<? extends Map<String, String>> otherDocumentUrls) {
-            if (otherDocumentUrls == null) {
-                throw new NullPointerException("otherDocumentUrls cannot be null");
-            }
+        public Builder otherDocumentUrlses(Collection<? extends Map<String, String>> otherDocumentUrls) {
+            if (otherDocumentUrls == null) return this;
             if (this.otherDocumentUrls == null) this.otherDocumentUrls = new ArrayList<Map<String, String>>();
             this.otherDocumentUrls.addAll(otherDocumentUrls);
             return this;
@@ -806,9 +781,7 @@ public record Asset(
         }
 
         public Builder explorerAddresses(Collection<? extends Map<String, String>> explorerAddresses) {
-            if (explorerAddresses == null) {
-                throw new NullPointerException("explorerAddresses cannot be null");
-            }
+            if (explorerAddresses == null) return this;
             if (this.explorerAddresses == null) this.explorerAddresses = new ArrayList<Map<String, String>>();
             this.explorerAddresses.addAll(explorerAddresses);
             return this;
@@ -827,9 +800,7 @@ public record Asset(
         }
 
         public Builder rpcOperators(Collection<? extends Map<String, String>> rpcOperators) {
-            if (rpcOperators == null) {
-                throw new NullPointerException("rpcOperators cannot be null");
-            }
+            if (rpcOperators == null) return this;
             if (this.rpcOperators == null) this.rpcOperators = new ArrayList<Map<String, String>>();
             this.rpcOperators.addAll(rpcOperators);
             return this;
@@ -853,9 +824,7 @@ public record Asset(
         }
 
         public Builder assetIndustries(Collection<? extends Map<String, String>> assetIndustries) {
-            if (assetIndustries == null) {
-                throw new NullPointerException("assetIndustries cannot be null");
-            }
+            if (assetIndustries == null) return this;
             if (this.assetIndustries == null) this.assetIndustries = new ArrayList<Map<String, String>>();
             this.assetIndustries.addAll(assetIndustries);
             return this;
@@ -874,9 +843,7 @@ public record Asset(
         }
 
         public Builder consensusMechanisms(Collection<? extends Map<String, String>> consensusMechanisms) {
-            if (consensusMechanisms == null) {
-                throw new NullPointerException("consensusMechanisms cannot be null");
-            }
+            if (consensusMechanisms == null) return this;
             if (this.consensusMechanisms == null) this.consensusMechanisms = new ArrayList<Map<String, String>>();
             this.consensusMechanisms.addAll(consensusMechanisms);
             return this;
@@ -896,9 +863,7 @@ public record Asset(
         }
 
         public Builder consensusAlgorithmTypes(Collection<? extends Map<String, String>> consensusAlgorithmTypes) {
-            if (consensusAlgorithmTypes == null) {
-                throw new NullPointerException("consensusAlgorithmTypes cannot be null");
-            }
+            if (consensusAlgorithmTypes == null) return this;
             if (this.consensusAlgorithmTypes == null)
                 this.consensusAlgorithmTypes = new ArrayList<Map<String, String>>();
             this.consensusAlgorithmTypes.addAll(consensusAlgorithmTypes);
@@ -918,9 +883,7 @@ public record Asset(
         }
 
         public Builder hashingAlgorithmTypes(Collection<? extends Map<String, String>> hashingAlgorithmTypes) {
-            if (hashingAlgorithmTypes == null) {
-                throw new NullPointerException("hashingAlgorithmTypes cannot be null");
-            }
+            if (hashingAlgorithmTypes == null) return this;
             if (this.hashingAlgorithmTypes == null) this.hashingAlgorithmTypes = new ArrayList<Map<String, String>>();
             this.hashingAlgorithmTypes.addAll(hashingAlgorithmTypes);
             return this;
@@ -964,9 +927,7 @@ public record Asset(
         }
 
         public Builder projectLeaders(Collection<? extends Map<String, String>> projectLeaders) {
-            if (projectLeaders == null) {
-                throw new NullPointerException("projectLeaders cannot be null");
-            }
+            if (projectLeaders == null) return this;
             if (this.projectLeaders == null) this.projectLeaders = new ArrayList<Map<String, String>>();
             this.projectLeaders.addAll(projectLeaders);
             return this;
@@ -986,9 +947,7 @@ public record Asset(
         }
 
         public Builder associatedContactDetails(Collection<? extends Map<String, String>> associatedContactDetails) {
-            if (associatedContactDetails == null) {
-                throw new NullPointerException("associatedContactDetails cannot be null");
-            }
+            if (associatedContactDetails == null) return this;
             if (this.associatedContactDetails == null)
                 this.associatedContactDetails = new ArrayList<Map<String, String>>();
             this.associatedContactDetails.addAll(associatedContactDetails);
@@ -1012,19 +971,13 @@ public record Asset(
         }
 
         public Asset build() {
-            Map<String, String> assetAlternativeIds;
-            switch (this.assetAlternativeIds$key == null ? 0 : this.assetAlternativeIds$key.size()) {
+            List<Map<String, String>> assetAlternativeIds;
+            switch (this.assetAlternativeIds == null ? 0 : this.assetAlternativeIds.size()) {
                 case 0:
-                    assetAlternativeIds = Collections.emptyMap();
-                    break;
-                case 1:
-                    assetAlternativeIds = Collections.singletonMap(this.assetAlternativeIds$key.get(0), this.assetAlternativeIds$value.get(0));
+                    assetAlternativeIds = Collections.emptyList();
                     break;
                 default:
-                    assetAlternativeIds = new LinkedHashMap<String, String>(this.assetAlternativeIds$key.size() < 1073741824 ? 1 + this.assetAlternativeIds$key.size() + (this.assetAlternativeIds$key.size() - 3) / 3 : Integer.MAX_VALUE);
-                    for (int $i = 0; $i < this.assetAlternativeIds$key.size(); $i++)
-                        assetAlternativeIds.put(this.assetAlternativeIds$key.get($i), (String) this.assetAlternativeIds$value.get($i));
-                    assetAlternativeIds = Collections.unmodifiableMap(assetAlternativeIds);
+                    assetAlternativeIds = Collections.unmodifiableList(this.assetAlternativeIds);
             }
             List<AssetPlatform> supportedPlatforms;
             switch (this.supportedPlatforms == null ? 0 : this.supportedPlatforms.size()) {
@@ -1240,7 +1193,7 @@ public record Asset(
         }
 
         public String toString() {
-            return "Asset.Builder(id=" + this.id + ", symbol=" + this.symbol + ", uri=" + this.uri + ", assetType=" + this.assetType + ", assetIssuerName=" + this.assetIssuerName + ", parentAssetSymbol=" + this.parentAssetSymbol + ", createdOn=" + this.createdOn + ", updatedOn=" + this.updatedOn + ", publicNotice=" + this.publicNotice + ", name=" + this.name + ", launchDate=" + this.launchDate + ", assetAlternativeIds$key=" + this.assetAlternativeIds$key + ", assetAlternativeIds$value=" + this.assetAlternativeIds$value + ", assetDescriptionSnippet=" + this.assetDescriptionSnippet + ", assetDecimalPoints=" + this.assetDecimalPoints + ", supportedPlatforms=" + this.supportedPlatforms + ", assetCustodians=" + this.assetCustodians + ", assetSecurityMetrics=" + this.assetSecurityMetrics + ", supplyMax=" + this.supplyMax + ", supplyIssued=" + this.supplyIssued + ", supplyTotal=" + this.supplyTotal + ", supplyCirculating=" + this.supplyCirculating + ", supplyFuture=" + this.supplyFuture + ", supplyLocked=" + this.supplyLocked + ", supplyBurnt=" + this.supplyBurnt + ", supplyStaked=" + this.supplyStaked + ", burnAddresses=" + this.burnAddresses + ", lockedAddresses=" + this.lockedAddresses + ", hasSmartContractCapabilities=" + this.hasSmartContractCapabilities + ", smartContractSupportType=" + this.smartContractSupportType + ", lastBlockHashesPerSecond=" + this.lastBlockHashesPerSecond + ", lastBlockDifficulty=" + this.lastBlockDifficulty + ", supportedStandards=" + this.supportedStandards + ", layerTwoSolutions=" + this.layerTwoSolutions + ", privacySolutions=" + this.privacySolutions + ", codeRepositories=" + this.codeRepositories + ", otherSocialNetworks=" + this.otherSocialNetworks + ", heldTokenSale=" + this.heldTokenSale + ", heldEquitySale=" + this.heldEquitySale + ", websiteUrl=" + this.websiteUrl + ", blogUrl=" + this.blogUrl + ", whitePaperUrl=" + this.whitePaperUrl + ", otherDocumentUrls=" + this.otherDocumentUrls + ", explorerAddresses=" + this.explorerAddresses + ", rpcOperators=" + this.rpcOperators + ", assetSymbolGlyph=" + this.assetSymbolGlyph + ", assetIndustries=" + this.assetIndustries + ", consensusMechanisms=" + this.consensusMechanisms + ", consensusAlgorithmTypes=" + this.consensusAlgorithmTypes + ", hashingAlgorithmTypes=" + this.hashingAlgorithmTypes + ", mktCapPenalty=" + this.mktCapPenalty + ", circulatingMktCapUsd=" + this.circulatingMktCapUsd + ", totalMktCapUsd=" + this.totalMktCapUsd + ", assetDescription=" + this.assetDescription + ", assetDescriptionSummary=" + this.assetDescriptionSummary + ", projectLeaders=" + this.projectLeaders + ", associatedContactDetails=" + this.associatedContactDetails + ", seoTitle=" + this.seoTitle + ", seoDescription=" + this.seoDescription + ")";
+            return "Asset.Builder(id=" + this.id + ", symbol=" + this.symbol + ", uri=" + this.uri + ", assetType=" + this.assetType + ", assetIssuerName=" + this.assetIssuerName + ", parentAssetSymbol=" + this.parentAssetSymbol + ", createdOn=" + this.createdOn + ", updatedOn=" + this.updatedOn + ", publicNotice=" + this.publicNotice + ", name=" + this.name + ", launchDate=" + this.launchDate + ", assetAlternativeIds=" + this.assetAlternativeIds + ", assetDescriptionSnippet=" + this.assetDescriptionSnippet + ", assetDecimalPoints=" + this.assetDecimalPoints + ", supportedPlatforms=" + this.supportedPlatforms + ", assetCustodians=" + this.assetCustodians + ", assetSecurityMetrics=" + this.assetSecurityMetrics + ", supplyMax=" + this.supplyMax + ", supplyIssued=" + this.supplyIssued + ", supplyTotal=" + this.supplyTotal + ", supplyCirculating=" + this.supplyCirculating + ", supplyFuture=" + this.supplyFuture + ", supplyLocked=" + this.supplyLocked + ", supplyBurnt=" + this.supplyBurnt + ", supplyStaked=" + this.supplyStaked + ", burnAddresses=" + this.burnAddresses + ", lockedAddresses=" + this.lockedAddresses + ", hasSmartContractCapabilities=" + this.hasSmartContractCapabilities + ", smartContractSupportType=" + this.smartContractSupportType + ", lastBlockHashesPerSecond=" + this.lastBlockHashesPerSecond + ", lastBlockDifficulty=" + this.lastBlockDifficulty + ", supportedStandards=" + this.supportedStandards + ", layerTwoSolutions=" + this.layerTwoSolutions + ", privacySolutions=" + this.privacySolutions + ", codeRepositories=" + this.codeRepositories + ", otherSocialNetworks=" + this.otherSocialNetworks + ", heldTokenSale=" + this.heldTokenSale + ", heldEquitySale=" + this.heldEquitySale + ", websiteUrl=" + this.websiteUrl + ", blogUrl=" + this.blogUrl + ", whitePaperUrl=" + this.whitePaperUrl + ", otherDocumentUrls=" + this.otherDocumentUrls + ", explorerAddresses=" + this.explorerAddresses + ", rpcOperators=" + this.rpcOperators + ", assetSymbolGlyph=" + this.assetSymbolGlyph + ", assetIndustries=" + this.assetIndustries + ", consensusMechanisms=" + this.consensusMechanisms + ", consensusAlgorithmTypes=" + this.consensusAlgorithmTypes + ", hashingAlgorithmTypes=" + this.hashingAlgorithmTypes + ", mktCapPenalty=" + this.mktCapPenalty + ", circulatingMktCapUsd=" + this.circulatingMktCapUsd + ", totalMktCapUsd=" + this.totalMktCapUsd + ", assetDescription=" + this.assetDescription + ", assetDescriptionSummary=" + this.assetDescriptionSummary + ", projectLeaders=" + this.projectLeaders + ", associatedContactDetails=" + this.associatedContactDetails + ", seoTitle=" + this.seoTitle + ", seoDescription=" + this.seoDescription + ")";
         }
     }
 
