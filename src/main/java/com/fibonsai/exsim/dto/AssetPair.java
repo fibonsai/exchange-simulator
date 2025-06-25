@@ -22,9 +22,18 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 @Slf4j
-public record CurrencyPair(Asset baseAsset, Asset quoteAsset, BigDecimal minAmount, BigDecimal maxAmount, BigDecimal priceScale, BigDecimal tradingFee) {
+public record AssetPair(
+        Asset baseAsset,
+        Asset quoteAsset,
+        BigDecimal minAmount,
+        BigDecimal maxAmount,
+        BigDecimal priceScale,
+        BigDecimal tradingFee
+) implements Comparable<AssetPair> {
 
-    public CurrencyPair(Asset baseAsset, Asset quoteAsset, BigDecimal minAmount, BigDecimal maxAmount, BigDecimal priceScale, BigDecimal tradingFee) {
+    private static final String DEFAULT_SEPARATOR = "/";
+
+    public AssetPair(Asset baseAsset, Asset quoteAsset, BigDecimal minAmount, BigDecimal maxAmount, BigDecimal priceScale, BigDecimal tradingFee) {
         this.baseAsset = Objects.requireNonNull(baseAsset);
         this.quoteAsset = Objects.requireNonNullElse(quoteAsset, AssetUtil.DEFAULT_QUOTE);
         this.minAmount = Objects.requireNonNullElse(minAmount, BigDecimal.ZERO);
@@ -71,12 +80,49 @@ public record CurrencyPair(Asset baseAsset, Asset quoteAsset, BigDecimal minAmou
             return this;
         }
 
-        public CurrencyPair build() {
-            return new CurrencyPair(baseAsset, quoteAsset, minAmount, maxAmount, priceScale, tradingFee);
+        public AssetPair build() {
+            return new AssetPair(baseAsset, quoteAsset, minAmount, maxAmount, priceScale, tradingFee);
         }
     }
 
     public static Builder builder() {
         return new Builder();
+    }
+
+    @Override
+    public String toString() {
+        return "AssetPair{" + simpleName() +
+                ", minAmount=" + minAmount +
+                ", maxAmount=" + maxAmount +
+                ", priceScale=" + priceScale +
+                ", tradingFee=" + tradingFee +
+                '}';
+    }
+
+    public String simpleName() {
+        return baseAsset.symbol() + DEFAULT_SEPARATOR + quoteAsset.symbol();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof AssetPair assetPair)) return false;
+
+        return baseAsset().equals(assetPair.baseAsset()) && quoteAsset().equals(assetPair.quoteAsset());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = baseAsset().hashCode();
+        result = 31 * result + quoteAsset().hashCode();
+        return result;
+    }
+
+    @Override
+    public int compareTo(AssetPair assetPair) {
+        int baseComparator = baseAsset().compareTo(assetPair.baseAsset());
+        if (baseComparator == 0) {
+            return quoteAsset().compareTo(assetPair.quoteAsset());
+        }
+        return baseComparator;
     }
 }
