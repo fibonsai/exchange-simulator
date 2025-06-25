@@ -14,12 +14,15 @@
 
 package com.fibonsai.exsim.types;
 
+import com.fibonsai.exsim.dto.Asset;
+import com.fibonsai.exsim.util.AssetUtil;
+
 import java.math.BigDecimal;
 import java.util.Currency;
 
 public interface FundsParams {
-    default Currency getCurrency() {
-        return Currency.getInstance("USD");
+    default Asset getAsset() {
+        return AssetUtil.fromCurrency(Currency.getInstance("USD"));
     }
 
     default BigDecimal getAmount() {
