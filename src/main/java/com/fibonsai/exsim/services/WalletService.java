@@ -16,28 +16,23 @@ package com.fibonsai.exsim.services;
 
 import com.fibonsai.exsim.dto.Asset;
 import com.fibonsai.exsim.dto.Event;
-import com.fibonsai.exsim.types.DepositFundsParams;
+import com.fibonsai.exsim.dto.Wallet;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WalletState;
-import com.fibonsai.exsim.types.WithdrawFundsParams;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
-import javax.naming.InsufficientResourcesException;
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.dto.Event.EventType.INFO;
-import static com.fibonsai.exsim.types.WalletState.*;
+import static com.fibonsai.exsim.types.WalletState.READ_ONLY;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_CANCELLED;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
 
@@ -114,7 +109,7 @@ public class WalletService extends AbstractService {
         }
         Optional<Wallet> walletFromRepository = getWallet(owner, asset).blockOptional();
         if (walletFromRepository.isPresent() &&
-                assetWithOneAddress.contains(walletFromRepository.get().asset.name())) {
+                assetWithOneAddress.contains(walletFromRepository.get().asset().name())) {
             return Mono.error(new IllegalArgumentException(
                     "Multiple wallets addresses not allowed using %s asset".formatted(asset)));
         }
@@ -186,100 +181,5 @@ public class WalletService extends AbstractService {
             }
         });
      }
-
-    public static class Wallet {
-
-        private final Asset asset;
-        private final String walletAddress;
-        private final String owner;
-
-        private BigDecimal amount = BigDecimal.ZERO;
-        private WalletState state = OFFLINE;
-        private Instant timestamp = Instant.now();
-
-        public Wallet(String owner, Asset asset, String walletAddress) {
-            this.owner = owner;
-            this.asset = asset;
-            this.walletAddress = walletAddress;
-        }
-
-        public String owner() {
-            return owner;
-        }
-
-        public String address() {
-            return walletAddress;
-        }
-
-        public Asset asset() {
-            return asset;
-        }
-
-        public BigDecimal amount() {
-            return amount;
-        }
-
-        public Instant timestamp() {
-            return timestamp;
-        }
-
-        public WalletState state() {
-            return state;
-        }
-
-        public Wallet setState(@NonNull WalletState state) {
-            this.state = state;
-            this.timestamp = Instant.now();
-            return this;
-        }
-
-        public Wallet transaction(FundsParams params) throws Exception {
-            if (state().is(OFFLINE, SYNC_ERROR, AUDIT_BLOCK, READ_ONLY)) {
-                throw new IllegalStateException("Transaction is not possible. Wallet state is " + state());
-            }
-            if (!asset().equals(params.getAsset())) {
-                throw new IllegalArgumentException("Transaction not possible using different iso4217: %s != %s".formatted(asset(), params.getAsset()));
-            }
-            switch (params) {
-                case DepositFundsParams dfParams -> {
-                    if (state().equals(WITHDRAW_ONLY)) {
-                        throw new IllegalStateException("Deposit is not possible. Wallet allow only withdraw transaction");
-                    }
-                    this.amount = this.amount.add(dfParams.getAmount());
-                }
-                case WithdrawFundsParams wfParams -> {
-                    var withdrawFundsAmount = wfParams.getAmount();
-                    if (withdrawFundsAmount.compareTo(amount) <= 0) {
-                        this.amount = this.amount.subtract(wfParams.getAmount());
-                    } else {
-                        throw new InsufficientResourcesException("Funds insufficient");
-                    }
-                }
-                default -> throw new IllegalStateException("Unexpected value: " + params);
-            }
-            this.timestamp = Instant.now();
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Wallet wallet = (Wallet) o;
-            return walletAddress.equals(wallet.walletAddress);
-        }
-
-        @Override
-        public int hashCode() {
-            return walletAddress.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return """
-                    { "timestamp": %s, "iso4217": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
-                    """.formatted(timestamp(), asset(), state(), address(), owner(), amount());
-        }
-    }
 
 }
