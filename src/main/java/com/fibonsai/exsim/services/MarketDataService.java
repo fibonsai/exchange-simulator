@@ -29,4 +29,8 @@ public class MarketDataService extends AbstractService {
     public void prepareAssets() {
         assetService.init();
     }
+
+    public void start() {
+
+    }
 }

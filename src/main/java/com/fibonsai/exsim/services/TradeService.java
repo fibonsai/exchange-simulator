@@ -22,4 +22,8 @@ public class TradeService extends AbstractService {
     public TradeService() {
         super();
     }
+
+    public void start() {
+
+    }
 }

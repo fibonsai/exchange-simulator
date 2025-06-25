@@ -39,4 +39,8 @@ public class AccountService extends AbstractService {
             return Mono.empty();
         }
     }
+
+    public void start() {
+
+    }
 }
