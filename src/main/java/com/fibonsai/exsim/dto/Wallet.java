@@ -17,7 +17,6 @@ package com.fibonsai.exsim.dto;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
-import com.fibonsai.exsim.types.WalletState;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
 import org.springframework.lang.NonNull;
 
@@ -25,7 +24,7 @@ import javax.naming.InsufficientResourcesException;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-import static com.fibonsai.exsim.types.WalletState.*;
+import static com.fibonsai.exsim.dto.WalletState.*;
 
 public class Wallet {
 
@@ -118,6 +117,6 @@ public class Wallet {
     public String toString() {
         return """
                 { "timestamp": %s, "asset": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
-                """.formatted(timestamp(), asset(), state(), address(), owner(), amount());
+                """.formatted(timestamp(), asset().symbol(), state(), address(), owner(), amount());
     }
 }

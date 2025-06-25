@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package com.fibonsai.exsim.types;
+package com.fibonsai.exsim.dto;
 
 import java.util.List;
 

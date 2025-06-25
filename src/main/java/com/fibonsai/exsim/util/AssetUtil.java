@@ -31,10 +31,11 @@ public class AssetUtil {
         return Asset.builder()
                 .id((long) currency.getNumericCode())
                 .name(currency.getCurrencyCode())
+                .symbol(currency.getCurrencyCode())
                 .assetDescription(currency.getDisplayName())
                 .assetSymbolGlyph(currency.getSymbol())
                 .assetDecimalPoints(BigDecimal.valueOf(currency.getDefaultFractionDigits()))
-                .symbol(currency.getSymbol())
+                .assetSymbolGlyph(currency.getSymbol())
                 .assetType(AssetType.FIAT)
                 .build();
     }

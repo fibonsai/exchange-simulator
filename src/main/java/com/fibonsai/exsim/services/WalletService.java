@@ -16,9 +16,9 @@ package com.fibonsai.exsim.services;
 
 import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.dto.Wallet;
+import com.fibonsai.exsim.dto.WalletState;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.FundsParams;
-import com.fibonsai.exsim.types.WalletState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.dto.Event.EventType.INFO;
-import static com.fibonsai.exsim.types.WalletState.READ_ONLY;
+import static com.fibonsai.exsim.dto.WalletState.READ_ONLY;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_CANCELLED;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
 
@@ -115,7 +115,7 @@ public class WalletService extends AbstractService {
         }
         Wallet wallet = new Wallet(owner, asset, walletAddress);
         wallets.putIfAbsent(key, wallet);
-        log.info("Created {} wallet to account {} with id {}", asset, owner, walletAddress);
+        log.info("Created {} wallet to account {} with id {}", asset.symbol(), owner, walletAddress);
         send(new Event(INFO, wallet.toString()), null, null);
         return Mono.just(wallet);
     }

@@ -57,8 +57,9 @@ public class AssetService {
     }
 
     public void loadFiatAssets() {
-        Currency.getAvailableCurrencies().forEach(this::add);
-        log.info("Loaded {} Currencies (FIAT)", assets().size());
+        var currencies = Currency.getAvailableCurrencies();
+        currencies.forEach(this::add);
+        log.info("Loaded {} Currencies (FIAT)", currencies.size());
     }
 
     public void loadFromFile() {
@@ -70,9 +71,7 @@ public class AssetService {
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("assets")).orElseThrow();
             jsonNodeAssets.forEachEntry((k, v) -> add(mapper.convertValue(v, Asset.class)));
-            log.info("Loaded {} CryptoCurrencies", assets().size());
-
-            log.info(assets().get("BTC").assetCustodians().toString());
+            log.info("Loaded {} CryptoCurrencies", jsonNodeAssets.size());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
