@@ -14,11 +14,15 @@
 
 package com.fibonsai.exsim.services;
 
+import com.fibonsai.exsim.dto.Asset;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
+import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import reactor.test.StepVerifier;
 
 import javax.naming.InsufficientResourcesException;
@@ -27,49 +31,52 @@ import java.util.*;
 
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.services.WalletService.State.*;
-import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
+import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_ASSET;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@SpringBootTest
 public class WalletServiceTest {
 
+    @Autowired
     private WalletService walletService;
-    private final Currency USD = Currency.getInstance("USD");
-    private final Currency EUR = Currency.getInstance("EUR");
+
+    private final Asset USD = AssetUtil.fromCurrency(Currency.getInstance("USD"));
+    private final Asset EUR = AssetUtil.fromCurrency(Currency.getInstance("EUR"));
     private final DepositFundsParams depositTenUsd = new DepositFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN; }
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final DepositFundsParams depositZeroUsd = new DepositFundsParams() {
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final DepositFundsParams deposit100Usd = new DepositFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN.multiply(BigDecimal.TEN); }
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final DepositFundsParams depositTenEur = new DepositFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN; }
-        public Currency getCurrency() { return EUR; }
+        public Asset getAsset() { return EUR; }
     };
     private final WithdrawFundsParams withdrawTenUsd = new WithdrawFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN; }
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final WithdrawFundsParams withdrawZeroUsd = new WithdrawFundsParams() {
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final WithdrawFundsParams withdraw100Usd = new WithdrawFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN.multiply(BigDecimal.TEN); }
-        public Currency getCurrency() { return USD; }
+        public Asset getAsset() { return USD; }
     };
     private final WithdrawFundsParams withdrawTenEur = new WithdrawFundsParams() {
         public BigDecimal getAmount() { return BigDecimal.TEN; }
-        public Currency getCurrency() { return EUR; }
+        public Asset getAsset() { return EUR; }
     };
 
     @BeforeEach
     public void setUp() {
-        this.walletService = new WalletService();
+        walletService.reset();
     }
 
     @Test
@@ -79,8 +86,8 @@ public class WalletServiceTest {
         StepVerifier.create(walletService.events().take(1)).then(() ->
             StepVerifier.create(walletService.createDefaultWallet(owner))
                 .consumeNextWith(wallet -> {
-                    assertEquals(wallet.owner(), owner);
-                    assertEquals(DEFAULT_CURRENCY, wallet.currency());
+                    assertEquals(owner, wallet.owner());
+                    assertEquals(DEFAULT_ASSET, wallet.asset());
                     assertNotNull(wallet.address());
                     assertEquals(BigDecimal.ZERO, wallet.amount());
                     assertEquals(OFFLINE, wallet.state());
@@ -99,12 +106,11 @@ public class WalletServiceTest {
         StepVerifier.create(walletService.events().take(1)).then(() ->
             StepVerifier.create(walletService.createWallet(owner, EUR))
                 .consumeNextWith(wallet -> {
-                    assertEquals(wallet.owner(), owner);
-                    assertEquals(EUR, wallet.currency());
+                    assertEquals(owner, wallet.owner());
+                    assertEquals(EUR, wallet.asset());
                     assertNotNull(wallet.address());
                     assertEquals(BigDecimal.ZERO, wallet.amount());
                     assertEquals(OFFLINE, wallet.state());
-                    wallet.owner().equals(owner);
                 })
                 .verifyComplete()
             )
@@ -121,12 +127,11 @@ public class WalletServiceTest {
         StepVerifier.create(walletService.events().take(1)).then(() ->
             StepVerifier.create(walletService.createWallet(owner, USD, address))
                 .consumeNextWith(wallet -> {
-                    assertEquals(wallet.owner(), owner);
-                    assertEquals(USD, wallet.currency());
+                    assertEquals(owner, wallet.owner());
+                    assertEquals(USD, wallet.asset());
                     assertEquals(address, wallet.address());
                     assertEquals(BigDecimal.ZERO, wallet.amount());
                     assertEquals(OFFLINE, wallet.state());
-                    wallet.owner().equals(owner);
                 })
                 .verifyComplete()
             )
@@ -155,7 +160,7 @@ public class WalletServiceTest {
     @Test
     void createWallet_throwIfNotAllowedMultiAddress() {
         String owner = "testOwner";
-        walletService.currenciesWithOnlyOneAddress(Set.of(USD.getCurrencyCode()));
+        walletService.currenciesWithOnlyOneAddress(Set.of(USD.name()));
 
         StepVerifier.create(walletService.events().take(1)).then(() ->
             StepVerifier.create(walletService.createWallet(owner, USD)).then(() ->

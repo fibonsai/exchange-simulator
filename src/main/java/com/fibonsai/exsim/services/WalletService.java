@@ -14,10 +14,12 @@
 
 package com.fibonsai.exsim.services;
 
+import com.fibonsai.exsim.dto.Asset;
 import com.fibonsai.exsim.dto.Event;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.FundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
+import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
 import static com.fibonsai.exsim.dto.Event.EventType.ERROR;
 import static com.fibonsai.exsim.dto.Event.EventType.INFO;
 import static com.fibonsai.exsim.services.WalletService.State.*;
-import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_CURRENCY;
+import static com.fibonsai.exsim.services.WalletService.Wallet.DEFAULT_ASSET;
 import static com.fibonsai.exsim.services.WalletService.Wallet.NULL;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_CANCELLED;
 import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
@@ -45,10 +47,12 @@ import static reactor.core.publisher.Sinks.EmitResult.FAIL_NON_SERIALIZED;
 @Service
 public class WalletService extends AbstractService {
 
+    private final AssetService assetService;
+
     private record WalletKey(String owner, String address) {}
     private final Map<WalletKey, Wallet> wallets = new ConcurrentHashMap<>();
-    private final Sinks.Many<Event> events = Sinks.many().multicast().onBackpressureBuffer();
-    private final Set<String> currenciesWithOnlyOneAddress = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> assetWithOneAddress = Collections.synchronizedSet(new HashSet<>());
+    private Sinks.Many<Event> events = Sinks.many().multicast().onBackpressureBuffer();
 
     @SuppressWarnings("unused")
     public enum State {
@@ -59,6 +63,7 @@ public class WalletService extends AbstractService {
         READ_ONLY,
         WITHDRAW_ONLY;
 
+
         public boolean is(State... states) {
             return List.of(states).contains(this);
         }
@@ -68,13 +73,13 @@ public class WalletService extends AbstractService {
 
         private static final String NULL_OWNER = "NULL";
 
-        public static final Currency DEFAULT_CURRENCY = Currency.getInstance("USD");
-        public static final Wallet NULL = new Wallet(NULL_OWNER, DEFAULT_CURRENCY, UUID.randomUUID().toString()) {
+        public static final Asset DEFAULT_ASSET = AssetUtil.fromCurrency(Currency.getInstance("USD"));
+        public static final Wallet NULL = new Wallet(NULL_OWNER, DEFAULT_ASSET, UUID.randomUUID().toString()) {
             public Wallet transaction(FundsParams params) { return this; }
             public State state() { return READ_ONLY; }
         };
 
-        private final Currency iso4217;
+        private final Asset asset;
         private final String walletAddress;
         private final String owner;
 
@@ -82,9 +87,9 @@ public class WalletService extends AbstractService {
         private State state = OFFLINE;
         private Instant timestamp = Instant.now();
 
-        public Wallet(String owner, Currency iso4217, String walletAddress) {
+        public Wallet(String owner, Asset asset, String walletAddress) {
             this.owner = owner;
-            this.iso4217 = iso4217;
+            this.asset = asset;
             this.walletAddress = walletAddress;
         }
 
@@ -96,8 +101,8 @@ public class WalletService extends AbstractService {
             return walletAddress;
         }
 
-        public Currency iso4217() {
-            return iso4217;
+        public Asset asset() {
+            return asset;
         }
 
         public BigDecimal amount() {
@@ -122,8 +127,8 @@ public class WalletService extends AbstractService {
             if (state().is(OFFLINE, SYNC_ERROR, AUDIT_BLOCK, READ_ONLY)) {
                 throw new IllegalStateException("Transaction is not possible. Wallet state is " + state());
             }
-            if (!iso4217().equals(params.getCurrency())) {
-                throw new IllegalArgumentException("Transaction not possible using different iso4217: %s != %s".formatted(iso4217(), params.getCurrency()));
+            if (!asset().equals(params.getAsset())) {
+                throw new IllegalArgumentException("Transaction not possible using different iso4217: %s != %s".formatted(asset(), params.getAsset()));
             }
             switch (params) {
                 case DepositFundsParams dfParams -> {
@@ -163,17 +168,26 @@ public class WalletService extends AbstractService {
         public String toString() {
             return """
                     { "timestamp": %s, "iso4217": %s, "state": %s, "walletAddress": "%s", "owner": "%s", "amount": %s }
-                    """.formatted(timestamp(), iso4217(), state(), address(), owner(), amount());
+                    """.formatted(timestamp(), asset(), state(), address(), owner(), amount());
         }
     }
 
-    public WalletService() {
+    public WalletService(AssetService assetService) {
         super();
+        this.assetService = assetService;
+    }
+
+    public void reset() {
+        log.warn("<<< Resetting wallet service >>>");
+        wallets.clear();
+        assetWithOneAddress.clear();
+        events.tryEmitComplete();
+        events = Sinks.many().multicast().onBackpressureBuffer();
     }
 
     public void currenciesWithOnlyOneAddress(Set<String> currenciesWithOnlyOneAddress) {
-        this.currenciesWithOnlyOneAddress.clear();
-        this.currenciesWithOnlyOneAddress.addAll(Optional.ofNullable(currenciesWithOnlyOneAddress).orElse(Set.of()));
+        this.assetWithOneAddress.clear();
+        this.assetWithOneAddress.addAll(Optional.ofNullable(currenciesWithOnlyOneAddress).orElse(Set.of()));
     }
 
     public Flux<Event> events() {
@@ -194,39 +208,39 @@ public class WalletService extends AbstractService {
     }
 
     public Mono<Wallet> createDefaultWallet(String owner) throws IllegalArgumentException {
-        return createWallet(owner, DEFAULT_CURRENCY);
+        return createWallet(owner, DEFAULT_ASSET);
     }
 
-    public Mono<Wallet> createWallet(String owner, Currency iso4217) throws IllegalArgumentException {
-        return createWallet(owner, iso4217, UUID.randomUUID().toString());
+    public Mono<Wallet> createWallet(String owner, Asset asset) throws IllegalArgumentException {
+        return createWallet(owner, asset, UUID.randomUUID().toString());
     }
 
-    public Mono<Wallet> createWallet(String owner, Currency iso4217, String walletAddress) throws IllegalArgumentException {
+    public Mono<Wallet> createWallet(String owner, Asset asset, String walletAddress) throws IllegalArgumentException {
         WalletKey key = new WalletKey(owner, walletAddress);
         if (wallets.containsKey(key)) {
             return Mono.error(new IllegalArgumentException("Wallet %s already exists".formatted(key)));
         }
-        Optional<Wallet> walletFromRepository = getWallet(owner, iso4217).blockOptional();
+        Optional<Wallet> walletFromRepository = getWallet(owner, asset).blockOptional();
         if (walletFromRepository.isPresent() &&
-                currenciesWithOnlyOneAddress.contains(walletFromRepository.get().iso4217.getCurrencyCode())) {
+                assetWithOneAddress.contains(walletFromRepository.get().asset.name())) {
             return Mono.error(new IllegalArgumentException(
-                    "Multiple wallets addresses not allowed using %s iso4217".formatted(iso4217)));
+                    "Multiple wallets addresses not allowed using %s asset".formatted(asset)));
         }
-        Wallet wallet = new Wallet(owner, iso4217, walletAddress);
+        Wallet wallet = new Wallet(owner, asset, walletAddress);
         wallets.putIfAbsent(key, wallet);
-        log.info("Created {} wallet to account {} with id {}", iso4217, owner, walletAddress);
+        log.info("Created {} wallet to account {} with id {}", asset, owner, walletAddress);
         send(new Event(INFO, wallet.toString()), null, null);
         return Mono.just(wallet);
     }
 
     public Mono<Wallet> getDefaultWallet(String owner) {
-        return getWallet(owner, DEFAULT_CURRENCY);
+        return getWallet(owner, DEFAULT_ASSET);
     }
 
-    public Mono<Wallet> getWallet(String owner, Currency iso4217) {
+    public Mono<Wallet> getWallet(String owner, Asset asset) {
         return Mono.fromCallable(() -> {
                 var locatedWallets = wallets.values().stream()
-                        .filter(wallet -> wallet.iso4217().equals(iso4217))
+                        .filter(wallet -> wallet.asset().equals(asset))
                         .filter(wallet -> wallet.owner().equals(owner))
                         .collect(Collectors.toSet());
                 if (locatedWallets.isEmpty()) {
@@ -234,8 +248,8 @@ public class WalletService extends AbstractService {
                 }
                 if (locatedWallets.size() > 1) {
                     throw new IllegalArgumentException(
-                            "Cannot return a single %s wallet when multiple wallets have the same %s iso4217."
-                            .formatted(iso4217, iso4217));
+                            "Cannot return a single %s wallet when multiple wallets have the same %s asset."
+                            .formatted(asset, asset));
                 }
                 return locatedWallets.iterator().next();
             })
@@ -254,7 +268,7 @@ public class WalletService extends AbstractService {
     private Mono<Wallet> getWallet(String owner, Object walletId, String traceid) {
         return switch (walletId) {
             case String walletAddress -> getWallet(owner, walletAddress);
-            case Currency iso4217 -> getWallet(owner, iso4217);
+            case Asset asset -> getWallet(owner, asset);
             default -> {
                 log.error("{}: Unexpected value: {}", traceid, walletId);
                 yield Mono.just(NULL);
