@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.fibonsai.exsim.dto.AssetPair;
+import com.fibonsai.exsim.types.Mutable;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -46,7 +47,8 @@ public record Exchange(
         String depositMethods,
         String withdrawalMethods,
         Integer sortOrder,
-        Set<AssetPair> assetPairs
+        @Mutable Set<AssetPair> assetPairs,
+        @Mutable Set<Api> apis
 ) implements Serializable, Comparable<Exchange> {
 
     @Serial
@@ -270,7 +272,27 @@ public record Exchange(
                 default -> java.util.Collections.unmodifiableList(new ArrayList<>(this.itemType));
             };
 
-            return new Exchange(this.id, this.name, this.url, itemType, this.centralizationType, this.internalName, this.gradePoints, this.gradePointsSplit, this.affiliateUrl, this.country, this.orderBook, this.trades, this.description, this.fullAddress, this.fees, this.depositMethods, this.withdrawalMethods, this.sortOrder, new HashSet<>());
+            return new Exchange(
+                    this.id,
+                    this.name,
+                    this.url,
+                    itemType,
+                    this.centralizationType,
+                    this.internalName,
+                    this.gradePoints,
+                    this.gradePointsSplit,
+                    this.affiliateUrl,
+                    this.country,
+                    this.orderBook,
+                    this.trades,
+                    this.description,
+                    this.fullAddress,
+                    this.fees,
+                    this.depositMethods,
+                    this.withdrawalMethods,
+                    this.sortOrder,
+                    new HashSet<>(),
+                    new HashSet<>());
         }
     }
 }
