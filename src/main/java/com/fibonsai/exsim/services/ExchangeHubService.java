@@ -104,8 +104,10 @@ public class ExchangeHubService extends AbstractService {
                                 if (assetBase != null) {
                                     Asset assetQuote = assetService.assets().get(quote.asText());
                                     if (assetQuote != null) {
-                                        exchangePairs.add(AssetPair.builder().setBaseAsset(assetBase).setQuoteAsset(assetQuote).build());
+                                        exchangePairs.add(AssetPair.builder().baseAsset(assetBase).quoteAsset(assetQuote).build());
                                     }
+                                } else {
+                                    log.warn("Asset {} not found", base);
                                 }
                             });
                         }

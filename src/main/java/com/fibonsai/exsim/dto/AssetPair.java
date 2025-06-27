@@ -14,12 +14,16 @@
 
 package com.fibonsai.exsim.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Objects;
 
 @Slf4j
 public record AssetPair(
@@ -29,20 +33,14 @@ public record AssetPair(
         BigDecimal maxAmount,
         BigDecimal priceScale,
         BigDecimal tradingFee
-) implements Comparable<AssetPair> {
+) implements Serializable, Comparable<AssetPair> {
+
+    @Serial
+    private static final long serialVersionUID = -7340731832345284129L;
 
     private static final String DEFAULT_SEPARATOR = "/";
 
-    public AssetPair(Asset baseAsset, Asset quoteAsset, BigDecimal minAmount, BigDecimal maxAmount, BigDecimal priceScale, BigDecimal tradingFee) {
-        this.baseAsset = Objects.requireNonNull(baseAsset);
-        this.quoteAsset = Objects.requireNonNullElse(quoteAsset, AssetUtil.DEFAULT_QUOTE);
-        this.minAmount = Objects.requireNonNullElse(minAmount, BigDecimal.ZERO);
-        this.maxAmount = Objects.requireNonNullElse(maxAmount, BigDecimal.valueOf(Double.MAX_VALUE));
-        this.priceScale = Objects.requireNonNullElse(priceScale, BigDecimal.valueOf(8L));
-        this.tradingFee = Objects.requireNonNullElse(tradingFee, BigDecimal.ZERO);
-    }
-
-    public final static class Builder {
+    public static final class Builder {
         private Asset baseAsset = AssetUtil.DEFAULT_BASE;
         private Asset quoteAsset = AssetUtil.DEFAULT_QUOTE;
         private BigDecimal minAmount = BigDecimal.ZERO;
@@ -50,33 +48,39 @@ public record AssetPair(
         private BigDecimal priceScale = BigDecimal.valueOf(8L);
         private BigDecimal tradingFee = BigDecimal.ZERO;
 
-        public Builder setBaseAsset(Asset baseAsset) {
-            this.baseAsset = Objects.requireNonNull(baseAsset);
+        public Builder baseAsset(@NonNull Asset baseAsset) {
+            this.baseAsset = baseAsset;
             return this;
         }
 
-        public Builder setQuoteAsset(Asset quoteAsset) {
-            this.quoteAsset = Objects.requireNonNull(quoteAsset);
+        public Builder quoteAsset(@NonNull Asset quoteAsset) {
+            this.quoteAsset = quoteAsset;
             return this;
         }
 
-        public Builder setMinAmount(BigDecimal minAmount) {
-            this.minAmount = Objects.requireNonNull(minAmount);
+        public Builder minAmount(@Nullable BigDecimal minAmount) {
+            if (minAmount != null) {
+                this.minAmount = minAmount;
+            }
             return this;
         }
 
-        public Builder setMaxAmount(BigDecimal maxAmount) {
-            this.maxAmount = Objects.requireNonNull(maxAmount);
+        public Builder maxAmount(@Nullable BigDecimal maxAmount) {
+            if (maxAmount != null) {
+                this.maxAmount = maxAmount;
+            }
             return this;
         }
 
-        public Builder setPriceScale(BigDecimal priceScale) {
-            this.priceScale = Objects.requireNonNull(priceScale);
+        public Builder priceScale(@NonNull BigDecimal priceScale) {
+            this.priceScale = priceScale;
             return this;
         }
 
-        public Builder setTradingFee(BigDecimal tradingFee) {
-            this.tradingFee = Objects.requireNonNull(tradingFee);
+        public Builder tradingFee(@Nullable BigDecimal tradingFee) {
+            if (tradingFee != null) {
+                this.tradingFee = tradingFee;
+            }
             return this;
         }
 
@@ -99,6 +103,7 @@ public record AssetPair(
                 '}';
     }
 
+    @JsonIgnore
     public String simpleName() {
         return baseAsset.symbol() + DEFAULT_SEPARATOR + quoteAsset.symbol();
     }
