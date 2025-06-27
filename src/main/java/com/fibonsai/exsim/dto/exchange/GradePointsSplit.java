@@ -58,7 +58,7 @@ public record GradePointsSplit(
         return new Builder();
     }
 
-    @JsonPOJOBuilder
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         @JsonProperty("Legal")

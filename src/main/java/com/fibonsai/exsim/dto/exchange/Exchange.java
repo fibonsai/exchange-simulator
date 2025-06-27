@@ -100,7 +100,7 @@ public record Exchange(
         return new Builder();
     }
 
-    @JsonPOJOBuilder
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
         @JsonProperty("Id")
         private Long id;

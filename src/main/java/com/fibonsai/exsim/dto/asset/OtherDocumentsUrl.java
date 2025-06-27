@@ -32,7 +32,7 @@ public record OtherDocumentsUrl(
         return new Builder();
     }
 
-    @JsonPOJOBuilder
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         @JsonProperty("TYPE")

@@ -44,7 +44,7 @@ public record AssetPlatform(
         return new Builder();
     }
 
-    @JsonPOJOBuilder
+    @JsonPOJOBuilder(withPrefix = "")
     public static class Builder {
 
         @JsonProperty("BLOCKCHAIN")
