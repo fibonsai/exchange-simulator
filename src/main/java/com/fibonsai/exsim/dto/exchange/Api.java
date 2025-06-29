@@ -83,11 +83,11 @@ public record Api(
         private String url = "http://localhost";
         private Boolean authRequired = false;
         private final Map<String, String> authenticationSpecs = new HashMap<>();
-        private Boolean enableRateLimits;
-        private RateLimitSpec rateLimits;
-        private Long timeout;
-        private Map<String, String> apiSpecs;
-        private String description;
+        private Boolean enableRateLimits = false;
+        private RateLimitSpec rateLimits = RateLimitSpec.DEFAULT;
+        private Long timeout = Long.MAX_VALUE;
+        private final Map<String, String> apiSpecs = new HashMap<>();
+        private String description = "";
 
         Builder() {
         }
