@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fibonsai.exsim.dto.AssetPair;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.dto.exchange.Exchange;
+import com.fibonsai.exsim.util.ResourcesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -78,10 +79,7 @@ public class ExchangeHubService extends AbstractService {
 
     public void loadExchangesFromFile() {
         log.info("Loading exchanges from {}", exchangesData);
-        try (InputStream in = getResourceAsStream(exchangesData)) {
-            if (in == null) {
-                throw new RuntimeException("%s not found".formatted(exchangesData));
-            }
+        try (InputStream in = ResourcesUtils.getResourceAsStream(Exchange.class, exchangesData)) {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeExchanges = Optional.ofNullable(jsonNode.get("Data")).orElseThrow();
@@ -94,14 +92,12 @@ public class ExchangeHubService extends AbstractService {
         }
 
         log.info("Loading exchanges pairs from {}", exchangesPairsData);
-        try (InputStream in = getResourceAsStream(exchangesPairsData)) {
-            if (in == null) {
-                throw new RuntimeException("%s not found".formatted(exchangesPairsData));
-            }
+        try (InputStream in = ResourcesUtils.getResourceAsStream(Exchange.class, exchangesPairsData)) {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("exchanges")).orElseThrow();
             final List<String> assetsNotFound = new ArrayList<>();
+            final List<String> exchangesWithoutPairs = new ArrayList<>();
             jsonNodeAssets.forEachEntry((exchangeName, jsonWithAssets) -> {
                 String exchangeSimpleName = exchangeName.toLowerCase();
                 Exchange exchange = exchanges.get(exchangeSimpleName);
@@ -123,30 +119,29 @@ public class ExchangeHubService extends AbstractService {
                         }
                     });
                     if (exchange.assetPairs().isEmpty()) {
-                        removeExchangeWithoutPairs(exchangeSimpleName);
+                        exchangesWithoutPairs.add(exchangeSimpleName);
                     } else {
-                        log.info("Exchange {} have {} asset pairs", exchange.name(), exchange.assetPairs().size());
+                        log.info("Exchange {} have {} asset pairs supported", exchange.name(), exchange.assetPairs().size());
                     }
                 } else {
-                    removeExchangeWithoutPairs(exchangeSimpleName);
+                    exchangesWithoutPairs.add(exchangeSimpleName);
                 }
             });
+            if (!exchangesWithoutPairs.isEmpty()) {
+                removeExchangeWithoutPairs(exchangesWithoutPairs);
+            }
+            log.info("{} exchanges loaded", exchanges.size());
             if (!assetsNotFound.isEmpty()) {
                 log.warn("The following assets are not registered in AssetService and will be ignored: {}",
                         assetsNotFound.stream().sorted().distinct().toList());
             }
-            log.info("{} exchanges loaded", exchanges.size());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    private static InputStream getResourceAsStream(String name) {
-        return Exchange.class.getClassLoader().getResourceAsStream(name);
-    }
-
-    private void removeExchangeWithoutPairs(String exchangeSimpleName) {
-        log.warn("Exchange {} don't have asset pairs. Removing.", exchangeSimpleName);
-        exchanges.remove(exchangeSimpleName);
+    private void removeExchangeWithoutPairs(List<String> exchangesWithoutPairs) {
+        log.warn("The following exchanges don't have asset pairs registered in AssetService and will be removed: {}", exchangesWithoutPairs);
+        exchangesWithoutPairs.forEach(exchanges::remove);
     }
 }

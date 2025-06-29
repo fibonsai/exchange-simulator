@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
+import com.fibonsai.exsim.util.ResourcesUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -67,10 +68,7 @@ public class AssetService {
     }
 
     public void loadFromFile() {
-        try (InputStream in = Asset.class.getClassLoader().getResourceAsStream(pairsData)) {
-            if (in == null) {
-                throw new RuntimeException("%s not found".formatted(pairsData));
-            }
+        try (InputStream in = ResourcesUtils.getResourceAsStream(Asset.class, pairsData)) {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("assets")).orElseThrow();
