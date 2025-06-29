@@ -28,6 +28,8 @@ import static com.fibonsai.exsim.dto.WalletState.*;
 
 public class Wallet {
 
+    public static final String ADDRESS_DEFAULT = "default";
+
     private final Asset asset;
     private final String walletAddress;
     private final String owner;

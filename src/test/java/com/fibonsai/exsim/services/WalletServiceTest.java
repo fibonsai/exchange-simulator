@@ -14,6 +14,7 @@
 
 package com.fibonsai.exsim.services;
 
+import com.fibonsai.exsim.dto.Wallet;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.types.DepositFundsParams;
 import com.fibonsai.exsim.types.WithdrawFundsParams;
@@ -89,6 +90,7 @@ public class WalletServiceTest {
             StepVerifier.create(walletService.createDefaultWallet(owner))
                 .consumeNextWith(wallet -> {
                     assertEquals(owner, wallet.owner());
+                    assertEquals(Wallet.ADDRESS_DEFAULT, wallet.address());
                     assertEquals(assetService.defaultAsset(), wallet.asset());
                     assertNotNull(wallet.address());
                     assertEquals(BigDecimal.ZERO, wallet.amount());
@@ -147,13 +149,24 @@ public class WalletServiceTest {
         String owner = "testOwnerWithAddress";
         String address = UUID.randomUUID().toString();
 
-        StepVerifier.create(walletService.events().take(1)).then(() ->
+        StepVerifier.create(walletService.events()).then(() ->
             StepVerifier.create(walletService.createWallet(owner, USD, address)).then(() ->
                 StepVerifier.create(walletService.createWallet(owner, USD, address))
-                    .verifyError(IllegalArgumentException.class)
+                    .consumeErrorWith(error -> {
+                        assertTrue(error.getMessage().contains("already exists"));
+                        assertInstanceOf(IllegalArgumentException.class, error);
+                    })
+                    .verify()
                 )
-                .thenConsumeWhile(Objects::nonNull)
+                .consumeNextWith(wallet -> {
+                    assertEquals(owner, wallet.owner());
+                    assertEquals(address, wallet.address());
+                })
                 .verifyComplete()
+            )
+            .consumeNextWith(event -> {})
+            .consumeNextWith(event ->
+                assertEquals(IllegalArgumentException.class, Objects.requireNonNull(event.error()).getClass())
             )
             .thenCancel()
             .verify();
@@ -173,9 +186,9 @@ public class WalletServiceTest {
                     })
                     .verify()
                 )
-        )
-        .thenCancel()
-        .verify();
+            )
+            .consumeNextWith(event -> assertEquals(IllegalArgumentException.class, Objects.requireNonNull(event.error()).getClass()))
+            .verifyComplete();
     }
 
     @Test
