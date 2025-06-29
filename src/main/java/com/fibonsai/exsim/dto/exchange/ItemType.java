@@ -20,9 +20,17 @@ public enum ItemType {
     FIAT,
     STABLE_COINS,
     TOKENIZED_STOCKS,
-    TOKENS;
+    TOKENS,
+    UNDEF;
 
     public static ItemType fromString(String value) {
-        return valueOf(value.replace(" ", "_").toUpperCase());
+        if (value == null || value.isBlank()) {
+            return UNDEF;
+        }
+        try {
+            return valueOf(value.replace(" ", "_").toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return UNDEF;
+        }
     }
 }

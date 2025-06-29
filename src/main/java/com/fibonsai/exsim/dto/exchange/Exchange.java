@@ -32,7 +32,7 @@ public record Exchange(
         Long id,
         String name,
         String url,
-        List<ItemType> itemType,
+        List<ItemType> itemTypes,
         CentralizationType centralizationType,
         String internalName,
         BigDecimal gradePoints,
@@ -61,7 +61,7 @@ public record Exchange(
                 ", name='" + name + '\'' +
                 ", internalName='" + internalName + '\'' +
                 ", url='" + url + '\'' +
-                ", itemType=" + itemType +
+                ", itemTypes=" + itemTypes +
                 ", centralizationType=" + centralizationType +
                 ", gradePoints=" + gradePoints +
                 ", gradePointsSplit=" + gradePointsSplit +
@@ -114,7 +114,7 @@ public record Exchange(
         private String url;
 
         @JsonProperty("ItemType")
-        private ArrayList<ItemType> itemType;
+        private ArrayList<ItemType> itemTypes;
 
         @JsonProperty("CentralizationType")
         private CentralizationType centralizationType;
@@ -177,21 +177,21 @@ public record Exchange(
         }
 
         public Builder itemType(ItemType itemType) {
-            if (this.itemType == null) this.itemType = new ArrayList<>();
-            this.itemType.add(itemType);
+            if (this.itemTypes == null) this.itemTypes = new ArrayList<>();
+            this.itemTypes.add(itemType);
             return this;
         }
 
-        public Builder itemType(Collection<? extends ItemType> itemType) {
+        public Builder itemTypes(Collection<? extends ItemType> itemType) {
             if (itemType == null) return this;
-            if (this.itemType == null) this.itemType = new ArrayList<>();
-            this.itemType.addAll(itemType);
+            if (this.itemTypes == null) this.itemTypes = new ArrayList<>();
+            this.itemTypes.addAll(itemType);
             return this;
         }
 
         public Builder clearItemType() {
-            if (this.itemType != null)
-                this.itemType.clear();
+            if (this.itemTypes != null)
+                this.itemTypes.clear();
             return this;
         }
 
@@ -266,10 +266,10 @@ public record Exchange(
         }
 
         public Exchange build() {
-            List<ItemType> itemType = switch (this.itemType == null ? 0 : this.itemType.size()) {
+            List<ItemType> itemType = switch (this.itemTypes == null ? 0 : this.itemTypes.size()) {
                 case 0 -> java.util.Collections.emptyList();
-                case 1 -> java.util.Collections.singletonList(this.itemType.getFirst());
-                default -> java.util.Collections.unmodifiableList(new ArrayList<>(this.itemType));
+                case 1 -> java.util.Collections.singletonList(this.itemTypes.getFirst());
+                default -> java.util.Collections.unmodifiableList(new ArrayList<>(this.itemTypes));
             };
 
             return new Exchange(
