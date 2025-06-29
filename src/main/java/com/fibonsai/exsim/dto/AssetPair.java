@@ -74,6 +74,7 @@ public record AssetPair(
             if (assetSpecs != null) {
                 this.assetSpecs.putAll(assetSpecs);
             }
+            return this;
         }
 
         public Builder minAmount(@Nullable BigDecimal minAmount) {
