@@ -37,9 +37,7 @@ public record AssetPair(
 
     @Serial
     private static final long serialVersionUID = -7340731832345284129L;
-
-    private static final String DEFAULT_SEPARATOR = "/";
-
+    
     public static final class Builder {
         private Asset baseAsset = AssetUtil.DEFAULT_BASE;
         private Asset quoteAsset = AssetUtil.DEFAULT_QUOTE;
@@ -105,7 +103,7 @@ public record AssetPair(
 
     @JsonIgnore
     public String simpleName() {
-        return baseAsset.symbol() + DEFAULT_SEPARATOR + quoteAsset.symbol();
+        return baseAsset.symbol() + AssetUtil.DEFAULT_SEPARATOR + quoteAsset.symbol();
     }
 
     @Override
