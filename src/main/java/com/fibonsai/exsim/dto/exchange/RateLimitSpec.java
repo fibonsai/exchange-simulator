@@ -30,6 +30,8 @@ public record RateLimitSpec(
     @Serial
     private static final long serialVersionUID = -7340731832345284129L;
 
+    public static final RateLimitSpec DEFAULT = new RateLimitSpec(Integer.MAX_VALUE, 0, 1);
+
     public static Builder builder() {
         return new Builder();
     }
