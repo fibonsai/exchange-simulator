@@ -20,20 +20,26 @@ import com.fibonsai.exsim.dto.AssetPair;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.dto.exchange.Exchange;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("SpellCheckingInspection")
 @Slf4j
 @Service
 public class ExchangeHubService extends AbstractService {
+
+    @Value("${exsim.exchanges_data}")
+    String exchangesData;
+
+    @Value("${exsim.exchanges_pairs_data}")
+    String exchangesPairsData;
 
     private final AccountService accountService;
     private final MarketDataService marketDataService;
@@ -65,15 +71,16 @@ public class ExchangeHubService extends AbstractService {
             tradeService.start();
             accountService.start();
 
-            log.info("exchange started");
+            log.info("exchange hub started");
             return Instant.now();
         });
     }
 
     public void loadExchangesFromFile() {
-        try (InputStream in = Asset.class.getClassLoader().getResourceAsStream("exchanges.json")) {
+        log.info("Loading exchanges from {}", exchangesData);
+        try (InputStream in = getResourceAsStream(exchangesData)) {
             if (in == null) {
-                throw new RuntimeException("exchanges.json not found");
+                throw new RuntimeException("%s not found".formatted(exchangesData));
             }
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
@@ -86,17 +93,20 @@ public class ExchangeHubService extends AbstractService {
             throw new RuntimeException(e);
         }
 
-        try (InputStream in = Asset.class.getClassLoader().getResourceAsStream("pairs_by_exchange.json")) {
+        log.info("Loading exchanges pairs from {}", exchangesPairsData);
+        try (InputStream in = getResourceAsStream(exchangesPairsData)) {
             if (in == null) {
-                throw new RuntimeException("pairs_by_exchange.json not found");
+                throw new RuntimeException("%s not found".formatted(exchangesPairsData));
             }
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("exchanges")).orElseThrow();
+            final List<String> assetsNotFound = new ArrayList<>();
             jsonNodeAssets.forEachEntry((exchangeName, jsonWithAssets) -> {
-                Exchange exchange = exchanges.get(exchangeName.toLowerCase());
+                String exchangeSimpleName = exchangeName.toLowerCase();
+                Exchange exchange = exchanges.get(exchangeSimpleName);
                 if (exchange != null) {
-                    Set<AssetPair> exchangePairs = exchange.assetPairs();
+                    final Set<AssetPair> exchangePairs = exchange.assetPairs();
                     jsonWithAssets.forEachEntry((base, quotes) -> {
                         if (quotes.isArray()) {
                             quotes.iterator().forEachRemaining(quote -> {
@@ -107,25 +117,36 @@ public class ExchangeHubService extends AbstractService {
                                         exchangePairs.add(AssetPair.builder().baseAsset(assetBase).quoteAsset(assetQuote).build());
                                     }
                                 } else {
-                                    log.warn("Asset {} not found", base);
+                                    assetsNotFound.add(base);
                                 }
                             });
                         }
                     });
                     if (exchange.assetPairs().isEmpty()) {
-                        log.warn("Exchange {} don't have asset pairs. Removing.", exchangeName.toLowerCase());
-                        exchanges.remove(exchangeName.toLowerCase());
+                        removeExchangeWithoutPairs(exchangeSimpleName);
                     } else {
                         log.info("Exchange {} have {} asset pairs", exchange.name(), exchange.assetPairs().size());
                     }
                 } else {
-                    log.warn("Exchange {} don't have asset pairs. Removing", exchangeName.toLowerCase());
-                    exchanges.remove(exchangeName.toLowerCase());
+                    removeExchangeWithoutPairs(exchangeSimpleName);
                 }
             });
+            if (!assetsNotFound.isEmpty()) {
+                log.warn("The following assets are not registered in AssetService and will be ignored: {}",
+                        assetsNotFound.stream().sorted().distinct().toList());
+            }
             log.info("{} exchanges loaded", exchanges.size());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private static InputStream getResourceAsStream(String name) {
+        return Exchange.class.getClassLoader().getResourceAsStream(name);
+    }
+
+    private void removeExchangeWithoutPairs(String exchangeSimpleName) {
+        log.warn("Exchange {} don't have asset pairs. Removing.", exchangeSimpleName);
+        exchanges.remove(exchangeSimpleName);
     }
 }
