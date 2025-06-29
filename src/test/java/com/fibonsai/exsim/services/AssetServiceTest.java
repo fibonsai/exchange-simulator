@@ -61,17 +61,17 @@ class AssetServiceTest {
     @Test
     void testLoadFiatAssets() {
         assetService.loadFiatAssets();
-        assertTrue(assetService.assets().size() > 0);
+        assertFalse(assetService.assets().isEmpty());
     }
 
     @Test
     void testLoadFromFile() {
         assetService.loadFromFile();
-        assertTrue(assetService.assets().size() > 0);
+        assertFalse(assetService.assets().isEmpty());
     }
 
     @Test
-    void testAssets() {
+    void testAssets_mapIsReadOnly() {
         Map<String, Asset> assets = assetService.assets();
         assertThrows(UnsupportedOperationException.class, () -> assets.put("test", Asset.builder().build()));
     }
