@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.Objects;
 
 @Slf4j
-public class ResourcesUtils {
+public class ResourcesUtil {
     public static InputStream getResourceAsStream(Class<?> fromClass, String name) {
         try {
             return Objects.requireNonNull(fromClass.getClassLoader().getResourceAsStream(name));

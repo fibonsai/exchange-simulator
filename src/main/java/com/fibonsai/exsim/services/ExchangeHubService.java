@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fibonsai.exsim.dto.AssetPair;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.dto.exchange.Exchange;
-import com.fibonsai.exsim.util.ResourcesUtils;
+import com.fibonsai.exsim.util.ResourcesUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -79,7 +79,7 @@ public class ExchangeHubService extends AbstractService {
 
     public void loadExchangesFromFile() {
         log.info("Loading exchanges from {}", exchangesData);
-        try (InputStream in = ResourcesUtils.getResourceAsStream(Exchange.class, exchangesData)) {
+        try (InputStream in = ResourcesUtil.getResourceAsStream(Exchange.class, exchangesData)) {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeExchanges = Optional.ofNullable(jsonNode.get("Data")).orElseThrow();
@@ -92,7 +92,7 @@ public class ExchangeHubService extends AbstractService {
         }
 
         log.info("Loading exchanges pairs from {}", exchangesPairsData);
-        try (InputStream in = ResourcesUtils.getResourceAsStream(Exchange.class, exchangesPairsData)) {
+        try (InputStream in = ResourcesUtil.getResourceAsStream(Exchange.class, exchangesPairsData)) {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
             JsonNode jsonNodeAssets = Optional.ofNullable(jsonNode.get("exchanges")).orElseThrow();
