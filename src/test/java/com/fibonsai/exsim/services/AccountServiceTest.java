@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import reactor.test.StepVerifier;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @SpringBootTest
@@ -48,7 +48,19 @@ class AccountServiceTest {
     void testAddAccountWithExistingAccount() {
         String accountStr = "existingAccount";
 
-        accountService.addAccount(accountStr).subscribe(log::info);
-        accountService.addAccount(accountStr).subscribe(log::info);
+        StepVerifier.create(accountService.addAccount(accountStr))
+            .consumeNextWith(acc -> {
+                StepVerifier.create(walletService.getDefaultWallet(acc))
+                    .consumeNextWith(wallet -> {
+                        assertEquals(accountStr, wallet.owner());
+                    })
+                    .verifyComplete();
+                StepVerifier.create(accountService.addAccount(accountStr))
+                    .consumeErrorWith(error -> {
+                        assertTrue(error.getMessage().contains("already exists"));
+                        assertInstanceOf(IllegalArgumentException.class, error);
+                    })
+                    .verify();
+            });
     }
 }
