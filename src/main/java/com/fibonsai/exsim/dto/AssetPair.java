@@ -16,6 +16,7 @@ package com.fibonsai.exsim.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fibonsai.exsim.dto.asset.Asset;
+import com.fibonsai.exsim.types.Mutable;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -24,27 +25,40 @@ import org.springframework.lang.Nullable;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 public record AssetPair(
         Asset baseAsset,
         Asset quoteAsset,
-        BigDecimal minAmount,
-        BigDecimal maxAmount,
-        BigDecimal priceScale,
-        BigDecimal tradingFee
+        @Mutable Map<String, BigDecimal> assetSpecs
 ) implements Serializable, Comparable<AssetPair> {
 
     @Serial
     private static final long serialVersionUID = -7340731832345284129L;
-    
+
+    private static final Map<String, BigDecimal> DEFAULT_ASSET_SPECS = new HashMap<>();
+    private static final String MIN_AMOUNT_PROP = "minAmount";
+    private static final String MAX_AMOUNT_PROP = "maxAmount";
+    private static final String PRICE_SCALE_PROP = "priceScale";
+    private static final String TRADING_FEE_PROP = "tradingFee";
+
+    static {
+        DEFAULT_ASSET_SPECS.put(MIN_AMOUNT_PROP, BigDecimal.ZERO);
+        DEFAULT_ASSET_SPECS.put(MAX_AMOUNT_PROP, BigDecimal.valueOf(Double.MAX_VALUE));
+        DEFAULT_ASSET_SPECS.put(PRICE_SCALE_PROP, BigDecimal.valueOf(8L));
+        DEFAULT_ASSET_SPECS.put(TRADING_FEE_PROP, BigDecimal.ZERO);
+    }
+
+    public AssetPair(Asset baseAsset, Asset quoteAsset) {
+        this(baseAsset, quoteAsset, DEFAULT_ASSET_SPECS);
+    }
+
     public static final class Builder {
         private Asset baseAsset = AssetUtil.DEFAULT_BASE;
         private Asset quoteAsset = AssetUtil.DEFAULT_QUOTE;
-        private BigDecimal minAmount = BigDecimal.ZERO;
-        private BigDecimal maxAmount = BigDecimal.valueOf(Double.MAX_VALUE);
-        private BigDecimal priceScale = BigDecimal.valueOf(8L);
-        private BigDecimal tradingFee = BigDecimal.ZERO;
+        private final Map<String, BigDecimal> assetSpecs = new HashMap<>();
 
         public Builder baseAsset(@NonNull Asset baseAsset) {
             this.baseAsset = baseAsset;
@@ -56,34 +70,42 @@ public record AssetPair(
             return this;
         }
 
+        public Builder assetSpecs(@Nullable Map<String, BigDecimal> assetSpecs) {
+            if (assetSpecs != null) {
+                this.assetSpecs.putAll(assetSpecs);
+            }
+        }
+
         public Builder minAmount(@Nullable BigDecimal minAmount) {
             if (minAmount != null) {
-                this.minAmount = minAmount;
+                this.assetSpecs.put(MIN_AMOUNT_PROP, minAmount);
             }
             return this;
         }
 
         public Builder maxAmount(@Nullable BigDecimal maxAmount) {
             if (maxAmount != null) {
-                this.maxAmount = maxAmount;
+                this.assetSpecs.put(MAX_AMOUNT_PROP, maxAmount);
             }
             return this;
         }
 
-        public Builder priceScale(@NonNull BigDecimal priceScale) {
-            this.priceScale = priceScale;
+        public Builder priceScale(@Nullable BigDecimal priceScale) {
+            if (priceScale != null) {
+                this.assetSpecs.put(PRICE_SCALE_PROP, priceScale);
+            }
             return this;
         }
 
         public Builder tradingFee(@Nullable BigDecimal tradingFee) {
             if (tradingFee != null) {
-                this.tradingFee = tradingFee;
+                this.assetSpecs.put(TRADING_FEE_PROP, tradingFee);
             }
             return this;
         }
 
         public AssetPair build() {
-            return new AssetPair(baseAsset, quoteAsset, minAmount, maxAmount, priceScale, tradingFee);
+            return new AssetPair(baseAsset, quoteAsset, assetSpecs);
         }
     }
 
@@ -93,12 +115,7 @@ public record AssetPair(
 
     @Override
     public String toString() {
-        return "AssetPair{" + simpleName() +
-                ", minAmount=" + minAmount +
-                ", maxAmount=" + maxAmount +
-                ", priceScale=" + priceScale +
-                ", tradingFee=" + tradingFee +
-                '}';
+        return "AssetPair{" + simpleName() + ", assetSpecs=" + assetSpecs() + '}';
     }
 
     @JsonIgnore
