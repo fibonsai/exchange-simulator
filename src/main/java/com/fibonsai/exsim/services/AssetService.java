@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fibonsai.exsim.dto.asset.Asset;
 import com.fibonsai.exsim.util.AssetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedInputStream;
@@ -32,6 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 public class AssetService {
+
+    @Value("${exsim.pairs_data}")
+    String pairsData;
 
     private final ObjectMapper mapper;
 
@@ -63,9 +67,9 @@ public class AssetService {
     }
 
     public void loadFromFile() {
-        try (InputStream in = Asset.class.getClassLoader().getResourceAsStream("top_assets_with_metadata.json")) {
+        try (InputStream in = Asset.class.getClassLoader().getResourceAsStream(pairsData)) {
             if (in == null) {
-                throw new RuntimeException("top_assets_with_metadata.json not found");
+                throw new RuntimeException("%s not found".formatted(pairsData));
             }
             BufferedInputStream bufferedInputStream = new BufferedInputStream(in);
             JsonNode jsonNode = mapper.readTree(bufferedInputStream);
